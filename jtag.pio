@@ -1,0 +1,51 @@
+;JTAG implementation
+
+.program djtag_tdo
+.side_set 1 opt
+
+; Pin assignments:
+; - TCK is side-set pin 0
+; - TDI is OUT pin 0
+; - TDO is IN pin 0
+;
+; Autopush and autopull must be enabled, and the serial frame size is set by
+; configuring the push/pull threshold (32 bits). Shift should be left
+
+; data is captured on the leading edge of each TCK pulse, and
+; transitions on the trailing edge, or some time before the first leading edge.
+    pull                        ; get length-1 and disregard previous OSR state 
+    out x, 32       side 0      ; this moves the first 32 bits into X
+loop:
+    out pins, 1     side 0      ; Stall here on empty (sideset proceeds even if instruction stalls, so we stall with SCK low
+    in pins, 1      side 1 [1] 
+    jmp x-- loop    side 0
+    push            side 0      ; Force the last ISR bits to be pushed to the tx fifo
+% c-sdk {
+#include "hardware/gpio.h"
+static inline void pio_jtag_init(PIO pio, uint sm,
+        uint16_t clkdiv, uint pin_tck, uint pin_tdi, uint pin_tdo) {
+    uint prog_offs = pio_add_program(pio, &djtag_tdo_program);
+    pio_sm_config c = djtag_tdo_program_get_default_config(prog_offs);
+    sm_config_set_out_pins(&c, pin_tdi, 1);
+    sm_config_set_in_pins(&c, pin_tdo);
+    sm_config_set_sideset_pins(&c, pin_tck);
+    //(shift to left, auto push/pull, threshold=nbits)
+    sm_config_set_out_shift(&c, false, true, 8);
+    sm_config_set_in_shift(&c, false, true, 8);
+    sm_config_set_clkdiv_int_frac(&c, clkdiv, 0);
+
+    // TDI, TCK output are low, TDO is input
+    pio_sm_set_pins_with_mask(pio, sm, 0, (1u << pin_tck) | (1u << pin_tdi));
+    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tdi), (1u << pin_tck) | (1u << pin_tdi) | (1u << pin_tdo));
+    pio_gpio_init(pio, pin_tdi);
+    //pio_gpio_init(pio, pin_tdo);
+    pio_gpio_init(pio, pin_tck);
+
+
+    // jtag is synchronous, so bypass input synchroniser to reduce input delay.
+    hw_set_bits(&pio->input_sync_bypass, 1u << pin_tdo);
+    gpio_set_pulls(pin_tdo, false, true); //TDO is pulled down
+    pio_sm_init(pio, sm, prog_offs, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
