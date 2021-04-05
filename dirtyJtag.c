@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
+#include "pico/multicore.h"
 #include "pio_jtag.h"
 #include "bsp/board.h"
 #include "get_serial.h"
@@ -14,6 +15,8 @@
 #define PIN_RST 20
 #define PIN_TRST 21
 #define PIN_SYNC 22
+
+//#define MULTICORE
 
 void init_pins()
 {
@@ -42,19 +45,41 @@ void jtag_task(pio_jtag_inst_t* jtag)
         if (count == 0) {
             return;
         }
+#ifdef MULTICORE
+        multicore_fifo_push_blocking(count);
+#else
         cmd_handle(jtag, rx_buf, count, tx_buf);
+#endif
     }       
 
 }
 
 
+#ifdef MULTICORE
+void core1_entry() {
+
+    multicore_fifo_push_blocking(0);
+
+    while (1)
+    {
+        uint32_t count = multicore_fifo_pop_blocking();
+        cmd_handle(&jtag, rx_buf, count, tx_buf);
+    }
+ 
+}
+#endif
+
+
 int main()
 {
-//  stdio_init_all();
-//  usb_serial_init();
     board_init();
     tusb_init();
     djtag_init();
+#ifdef MULTICORE
+    multicore_launch_core1(core1_entry);
+    uint32_t flag = multicore_fifo_pop_blocking();
+    assert(flag == 0);
+#endif
     while (1) {
         tud_task(); // tinyusb device task
         jtag_task(&jtag);

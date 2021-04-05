@@ -67,7 +67,6 @@ void __time_critical_func(pio_jtag_write_blocking)(const pio_jtag_inst_t *jtag, 
     size_t tx_remain = byte_length, rx_remain = last_shift ? byte_length : byte_length+1;
     io_rw_8 *txfifo = (io_rw_8 *) &jtag->pio->txf[jtag->sm];
     io_rw_8 *rxfifo = (io_rw_8 *) &jtag->pio->rxf[jtag->sm];
-    uint32_t* src = (uint32_t*)bsrc;
     //kick off the process by sending the len to the tx pipeline
     *(io_rw_32*)txfifo = len-1;
 #ifdef DMA
@@ -115,7 +114,6 @@ void __time_critical_func(pio_jtag_write_read_blocking)(const pio_jtag_inst_t *j
     size_t last_shift = ((byte_length << 3) - len);
     size_t tx_remain = byte_length, rx_remain = last_shift ? byte_length : byte_length+1;
     uint8_t* rx_last_byte_p = &bdst[byte_length-1];
-    
     io_rw_8 *txfifo = (io_rw_8 *) &jtag->pio->txf[jtag->sm];
     io_rw_8 *rxfifo = (io_rw_8 *) &jtag->pio->rxf[jtag->sm];
     //kick off the process by sending the len to the tx pipeline
