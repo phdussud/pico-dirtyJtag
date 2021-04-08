@@ -14,14 +14,12 @@
 #define PIN_TMS 19
 #define PIN_RST 20
 #define PIN_TRST 21
-#define PIN_SYNC 22
 
-//#define MULTICORE
+
+#define MULTICORE
 
 void init_pins()
 {
-    gpio_init(PIN_SYNC);
-    gpio_set_dir(PIN_SYNC, GPIO_OUT);
 }
 
 pio_jtag_inst_t jtag = {
@@ -34,22 +32,54 @@ void djtag_init()
     init_pins();
     init_jtag(&jtag, 1000, PIN_TCK, PIN_TDI, PIN_TDO, PIN_TMS, PIN_RST, PIN_TRST);
 }
-
-static uint8_t rx_buf[64];
-static uint8_t tx_buf[64];
-
-void jtag_task(pio_jtag_inst_t* jtag)
+typedef uint8_t cmd_buffer[64];
+static int rx_buffer_number = 0;
+typedef struct buffer_info
 {
-    if ( tud_vendor_available() ) {
-        uint count = tud_vendor_read(rx_buf, 64);
-        if (count == 0) {
-            return;
-        }
-#ifdef MULTICORE
-        multicore_fifo_push_blocking(count);
-#else
-        cmd_handle(jtag, rx_buf, count, tx_buf);
+    volatile uint count;
+    volatile bool busy;
+    cmd_buffer buffer;
+} buffer_info;
+buffer_info buffer_infos[2];
+
+static cmd_buffer tx_buf;
+
+
+
+void jtag_task()
+{
+    #ifdef MULTICORE
+    if (multicore_fifo_rvalid())
+    {
+        //some command processing has been done
+        uint rx_num = multicore_fifo_pop_blocking();
+        buffer_info* bi = &buffer_infos[rx_num];
+        bi->busy = false;
+
+    }
 #endif
+    if ((buffer_infos[rx_buffer_number].busy == false)) 
+    {
+        //If tud_task() is called and tud_vendor_read isn't called immediately (i.e before calling tud_task again)
+        //after there is data available, there is a risk that data from 2 BULK OUT transaction will be (partially) combined into one
+        //The DJTAG protocol does not tolerate this. 
+        tud_task();// tinyusb device task
+        if (tud_vendor_available())
+        {
+            uint count = tud_vendor_read(buffer_infos[rx_buffer_number].buffer, 64);
+            if (count != 0)
+            {
+                buffer_infos[rx_buffer_number].count = count;
+    #ifdef MULTICORE
+                buffer_infos[rx_buffer_number].busy = true;
+                multicore_fifo_push_blocking(rx_buffer_number);
+                rx_buffer_number = 1 - rx_buffer_number;
+    #else
+                cmd_handle(&jtag, buffer_infos[rx_buffer_number].buffer, buffer_infos[rx_buffer_number].count, tx_buf);
+    #endif
+            }
+        }
+
     }       
 
 }
@@ -58,12 +88,14 @@ void jtag_task(pio_jtag_inst_t* jtag)
 #ifdef MULTICORE
 void core1_entry() {
 
-    multicore_fifo_push_blocking(0);
-
+    djtag_init();
     while (1)
     {
-        uint32_t count = multicore_fifo_pop_blocking();
-        cmd_handle(&jtag, rx_buf, count, tx_buf);
+        uint rx_num = multicore_fifo_pop_blocking();
+        buffer_info* bi = &buffer_infos[rx_num];
+        assert (bi->busy);
+        cmd_handle(&jtag, bi->buffer, bi->count, tx_buf);
+        multicore_fifo_push_blocking(rx_num);
     }
  
 }
@@ -74,14 +106,13 @@ int main()
 {
     board_init();
     tusb_init();
-    djtag_init();
+
 #ifdef MULTICORE
     multicore_launch_core1(core1_entry);
-    uint32_t flag = multicore_fifo_pop_blocking();
-    assert(flag == 0);
+#else 
+    djtag_init();
 #endif
     while (1) {
-        tud_task(); // tinyusb device task
-        jtag_task(&jtag);
+        jtag_task();
     }
 }
