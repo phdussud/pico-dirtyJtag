@@ -45,9 +45,13 @@ enum CommandIdentifier {
   CMD_GOTOBOOTLOADER = 0x08
 };
 
-enum CommandModifier {
+enum CommandModifier
+{
+  // CMD_XFER
   NO_READ = 0x80,
-  EXTEND_LENGTH = 0x40
+  EXTEND_LENGTH = 0x40,
+  // CMD_CLK
+  READOUT = 0x80,
 };
 
 enum SignalIdentifier {
@@ -114,9 +118,11 @@ static void cmd_getsig(pio_jtag_inst_t* jtag);
  *
  * CMD_CLK sends clock pulses with specific TMS and TDI state.
  *
+ * @param usbd_dev USB device
  * @param commands Command data
+ * @param readout Enable TDO readout
  */
-static void cmd_clk(pio_jtag_inst_t* jtag, const uint8_t *commands);
+static void cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout);
 /**
  * @brief Handle CMD_SETVOLTAGE command
  *
@@ -166,10 +172,17 @@ uint8_t cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_
       break;
 
     case CMD_CLK:
-      cmd_clk(jtag, commands);
-      commands += 2;
+      cmd_clk(jtag, commands, !!(*commands & READOUT));
+      if (*commands & READOUT)
+      {
+        return 0;
+      }
+      else
+      {
+        commands += 2;
+      }
       break;
-      
+
     case CMD_SETVOLTAGE:
       cmd_setvoltage(commands);
       commands += 1;
@@ -267,13 +280,18 @@ static void cmd_getsig(pio_jtag_inst_t* jtag) {
   tud_vendor_write(&signal_status, 1);
 }
 
-static void cmd_clk(pio_jtag_inst_t* jtag, const uint8_t *commands) {
+static void cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout)
+{
   uint8_t signals, clk_pulses;
-
   signals = commands[1];
   clk_pulses = commands[2];
+  uint8_t readout_val = jtag_strobe(jtag, clk_pulses, signals & SIG_TMS, signals & SIG_TDI);
 
-  jtag_strobe(jtag, clk_pulses, signals & SIG_TMS, signals & SIG_TDI);
+  if (readout)
+  {
+    tud_vendor_write(&readout_val, 1);
+  }
+  
 }
 
 static void cmd_setvoltage(const uint8_t *commands) {

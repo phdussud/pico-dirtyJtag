@@ -16,7 +16,7 @@
 #define PIN_TRST 21
 
 
-//#define MULTICORE
+#define MULTICORE
 
 void init_pins()
 {
@@ -37,17 +37,18 @@ static uint wr_buffer_number = 0;
 static uint rd_buffer_number = 0; 
 typedef struct buffer_info
 {
-    volatile uint count;
-    volatile bool busy;
+    volatile uint8_t count;
+    volatile uint8_t busy;
     cmd_buffer buffer;
 } buffer_info;
-buffer_info buffer_infos[2];
+
+#define n_buffers (4)
+
+buffer_info buffer_infos[n_buffers];
 
 static cmd_buffer tx_buf;
 
-
-
-void jtag_task()
+void jtag_main_task()
 {
 #ifdef MULTICORE
     if (multicore_fifo_rvalid())
@@ -73,7 +74,11 @@ void jtag_task()
             {
                 buffer_infos[bnum].count = count;
                 buffer_infos[bnum].busy = true;
-                wr_buffer_number = 1 - wr_buffer_number; //switch buffer
+                wr_buffer_number = wr_buffer_number + 1; //switch buffer
+                if (wr_buffer_number == n_buffers)
+                {
+                    wr_buffer_number = 0; 
+                }
 #ifdef MULTICORE
                 multicore_fifo_push_blocking(bnum);
 #endif
@@ -84,6 +89,12 @@ void jtag_task()
 
 }
 
+void jtag_task()
+{
+#ifndef MULTICORE
+    jtag_main_task();
+#endif
+}
 
 #ifdef MULTICORE
 void core1_entry() {
@@ -108,7 +119,11 @@ void fetch_command()
     {
         cmd_handle(&jtag, buffer_infos[rd_buffer_number].buffer, buffer_infos[rd_buffer_number].count, tx_buf);
         buffer_infos[rd_buffer_number].busy = false;
-        rd_buffer_number = 1 - rd_buffer_number; //switch buffer
+        rd_buffer_number++; //switch buffer
+        if (rd_buffer_number == n_buffers)
+        {
+            rd_buffer_number = 0; 
+        }
     }
 #endif
 }
@@ -126,7 +141,7 @@ int main()
     djtag_init();
 #endif
     while (1) {
-        jtag_task();
+        jtag_main_task();
         fetch_command();//for unicore implementation
     }
 }

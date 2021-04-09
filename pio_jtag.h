@@ -28,7 +28,7 @@ void jtag_set_clk_freq(const pio_jtag_inst_t *jtag, uint freq_khz);
 
 void jtag_transfer(const pio_jtag_inst_t *jtag, uint32_t length, const uint8_t* in, uint8_t* out);
 
-void jtag_strobe(const pio_jtag_inst_t *jtag, uint32_t length, bool tms, bool tdi);
+uint8_t jtag_strobe(const pio_jtag_inst_t *jtag, uint32_t length, bool tms, bool tdi);
 
 
 static inline void jtag_set_tms(const pio_jtag_inst_t *jtag, bool value)

@@ -251,8 +251,6 @@ void jtag_set_clk_freq(const pio_jtag_inst_t *jtag, uint freq_khz) {
 
 void jtag_transfer(const pio_jtag_inst_t *jtag, uint32_t length, const uint8_t* in, uint8_t* out)
 {
-    //pio_gpio_init(jtag->pio, jtag->pin_tdi);
-    //pio_gpio_init(jtag->pio, jtag->pin_tck);
     /* set tms to low */
     jtag_set_tms(jtag, false);
 
@@ -260,19 +258,12 @@ void jtag_transfer(const pio_jtag_inst_t *jtag, uint32_t length, const uint8_t* 
         pio_jtag_write_read_blocking(jtag, in, out, length);
     else
         pio_jtag_write_blocking(jtag, in, length);
-    
-    //gpio_init_mask((1u << jtag->pin_tdi) | (1u << jtag->pin_tck));
-    //gpio_set_dir_masked((1u << jtag->pin_tck) | (1u << jtag->pin_tdi), 0xffffffffu);
 
 }
 
-void jtag_strobe(const pio_jtag_inst_t *jtag, uint32_t length, bool tms, bool tdi)
+uint8_t jtag_strobe(const pio_jtag_inst_t *jtag, uint32_t length, bool tms, bool tdi)
 {
-    //pio_gpio_init(jtag->pio, jtag->pin_tdi);
-    //pio_gpio_init(jtag->pio, jtag->pin_tck);
-    pio_jtag_write_tms_blocking(jtag, tdi, tms, length);
-    //gpio_init_mask((1u << jtag->pin_tdi) | (1u << jtag->pin_tck));
-    //gpio_set_dir_masked((1u << jtag->pin_tck) | (1u << jtag->pin_tdi), 0xffffffffu);
+    return pio_jtag_write_tms_blocking(jtag, tdi, tms, length);
 }
 
 
@@ -283,8 +274,6 @@ static uint8_t toggle_bits_in_buffer[4];
 void jtag_set_tdi(const pio_jtag_inst_t *jtag, bool value)
 {
     toggle_bits_out_buffer[0] = value ? 1u << 7 : 0;
-    //gpio_put(jtag->pin_tdi, value);
-    //pio_sm_set_pins_with_mask(jtag->pio, jtag->sm, value, (1 << jtag->pin_tdi));
 }
 
 void jtag_set_clk(const pio_jtag_inst_t *jtag, bool value)
@@ -294,13 +283,10 @@ void jtag_set_clk(const pio_jtag_inst_t *jtag, bool value)
         toggle_bits_in_buffer[0] = 0; 
         pio_jtag_write_read_blocking(jtag, toggle_bits_out_buffer, toggle_bits_in_buffer, 1);
     }
-    //gpio_put(jtag->pin_tck, value);
-    //pio_sm_set_pins_with_mask(jtag->pio, jtag->sm, value, (1 << jtag->pin_tck));
 }
 
 bool jtag_get_tdo(const pio_jtag_inst_t *jtag)
 {
-    //return gpio_get(jtag->pin_tdo);
     return !! toggle_bits_in_buffer[0];
 }
 
