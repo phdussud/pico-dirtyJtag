@@ -3,12 +3,10 @@
 #include "pio_jtag.h"
 #include "jtag.pio.h"
 
+void jtag_task();//to process USB OUT packets while waiting for DMA to finish
+
 #define DMA
 
-inline static uint32_t swap_bytes(uint32_t x)
-{
-    return __builtin_bswap32 (x);
-}
 
 #ifdef DMA
 
@@ -67,12 +65,12 @@ void __time_critical_func(pio_jtag_write_blocking)(const pio_jtag_inst_t *jtag, 
     size_t tx_remain = byte_length, rx_remain = last_shift ? byte_length : byte_length+1;
     io_rw_8 *txfifo = (io_rw_8 *) &jtag->pio->txf[jtag->sm];
     io_rw_8 *rxfifo = (io_rw_8 *) &jtag->pio->rxf[jtag->sm];
+    uint8_t x; // scratch local to receive data
     //kick off the process by sending the len to the tx pipeline
     *(io_rw_32*)txfifo = len-1;
 #ifdef DMA
     if (byte_length > 4)
     {
-        size_t x; // scratch local to receive data
         dma_init();
         channel_config_set_read_increment(&tx_c, true);
         channel_config_set_write_increment(&rx_c, false);
@@ -81,8 +79,8 @@ void __time_critical_func(pio_jtag_write_blocking)(const pio_jtag_inst_t *jtag, 
         dma_channel_transfer_to_buffer_now(rx_dma_chan, (void*)&x, rx_remain);
         dma_channel_transfer_from_buffer_now(tx_dma_chan, (void*)bsrc, tx_remain);
         while (dma_channel_is_busy(rx_dma_chan))
-        { 
-            //tud_task();
+        {
+            jtag_task();
             tight_loop_contents();
         }
         // stop the compiler hoisting a non volatile buffer access above the DMA completion.
@@ -100,7 +98,7 @@ void __time_critical_func(pio_jtag_write_blocking)(const pio_jtag_inst_t *jtag, 
             }
             if (rx_remain && !pio_sm_is_rx_fifo_empty(jtag->pio, jtag->sm))
             {
-                (void) *rxfifo;
+                x = *rxfifo;
                 --rx_remain;
             }
         }
@@ -121,7 +119,6 @@ void __time_critical_func(pio_jtag_write_read_blocking)(const pio_jtag_inst_t *j
 #ifdef DMA
     if (byte_length > 4)
     {
-        size_t x; // scratch local to receive data
         dma_init();
         channel_config_set_read_increment(&tx_c, true);
         channel_config_set_write_increment(&rx_c, true);
@@ -130,8 +127,8 @@ void __time_critical_func(pio_jtag_write_read_blocking)(const pio_jtag_inst_t *j
         dma_channel_transfer_to_buffer_now(rx_dma_chan, (void*)bdst, rx_remain);
         dma_channel_transfer_from_buffer_now(tx_dma_chan, (void*)bsrc, tx_remain);
         while (dma_channel_is_busy(rx_dma_chan))
-        { 
-            //tud_task();
+        {
+            jtag_task();
             tight_loop_contents();
         }
         // stop the compiler hoisting a non volatile buffer access above the DMA completion.
@@ -161,13 +158,14 @@ void __time_critical_func(pio_jtag_write_read_blocking)(const pio_jtag_inst_t *j
     }
 }
 
-void __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t *jtag, bool tdi, bool tms, size_t len)
+uint8_t __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t *jtag, bool tdi, bool tms, size_t len)
 {
     size_t byte_length = (len+7 >> 3);
     size_t last_shift = ((byte_length << 3) - len);
     size_t tx_remain = byte_length, rx_remain = last_shift ? byte_length : byte_length+1;
     io_rw_8 *txfifo = (io_rw_8 *) &jtag->pio->txf[jtag->sm];
     io_rw_8 *rxfifo = (io_rw_8 *) &jtag->pio->rxf[jtag->sm];
+    uint8_t x; // scratch local to receive data
     uint8_t tdi_word = tdi ? 0xFF : 0x0;
     gpio_put(jtag->pin_tms, tms);
     //kick off the process by sending the len to the tx pipeline
@@ -175,7 +173,6 @@ void __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t *jt
 #ifdef DMA
     if (byte_length > 4)
     {   
-        size_t x; // scratch local to receive data
         dma_init();
         channel_config_set_read_increment(&tx_c, false);
         channel_config_set_write_increment(&rx_c, false);
@@ -184,8 +181,8 @@ void __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t *jt
         dma_channel_transfer_to_buffer_now(rx_dma_chan, (void*)&x, rx_remain);
         dma_channel_transfer_from_buffer_now(tx_dma_chan, (void*)&tdi_word, tx_remain);
         while (dma_channel_is_busy(rx_dma_chan))
-        { 
-            //tud_task();
+        {
+            jtag_task();
             tight_loop_contents();
         }
         // stop the compiler hoisting a non volatile buffer access above the DMA completion.
@@ -203,11 +200,17 @@ void __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t *jt
             }
             if (rx_remain && !pio_sm_is_rx_fifo_empty(jtag->pio, jtag->sm)) 
             {
-                (void)*rxfifo;
+                x = *rxfifo;
                 --rx_remain;
             }
         }
     }
+    //fix the last byte
+    if (last_shift)
+    {
+        x = x << last_shift;
+    }
+    return x;
 }
 
 static void init_pins(uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)

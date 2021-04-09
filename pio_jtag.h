@@ -15,14 +15,6 @@ typedef struct pio_jtag_inst {
     uint pin_trst;
 } pio_jtag_inst_t;
 
-// SM is done when it stalls on an empty FIFO
-//should be called only after the last word has been written to the TX_FIFO
-static inline void jtag_wait_idle(const pio_jtag_inst_t *jtag) {
-    uint32_t sm_stall_mask = 1u << (jtag->sm + PIO_FDEBUG_TXSTALL_LSB);
-    jtag->pio->fdebug = sm_stall_mask;
-    while (!(jtag->pio->fdebug & sm_stall_mask))
-        ;
-}
 
 void init_jtag(pio_jtag_inst_t* jtag, uint freq, uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst);
 
@@ -30,7 +22,7 @@ void pio_jtag_write_blocking(const pio_jtag_inst_t *jtag, const uint8_t *src, si
 
 void pio_jtag_write_read_blocking(const pio_jtag_inst_t *jtag, const uint8_t *src, uint8_t *dst, size_t len);
 
-void pio_jtag_write_tms_blocking(const pio_jtag_inst_t *jtag, bool tdi, bool tms, size_t len);
+uint8_t pio_jtag_write_tms_blocking(const pio_jtag_inst_t *jtag, bool tdi, bool tms, size_t len);
 
 void jtag_set_clk_freq(const pio_jtag_inst_t *jtag, uint freq_khz);
 

@@ -16,7 +16,7 @@
 #define PIN_TRST 21
 
 
-#define MULTICORE
+//#define MULTICORE
 
 void init_pins()
 {
@@ -33,7 +33,8 @@ void djtag_init()
     init_jtag(&jtag, 1000, PIN_TCK, PIN_TDI, PIN_TDO, PIN_TMS, PIN_RST, PIN_TRST);
 }
 typedef uint8_t cmd_buffer[64];
-static int rx_buffer_number = 0;
+static uint wr_buffer_number = 0;
+static uint rd_buffer_number = 0; 
 typedef struct buffer_info
 {
     volatile uint count;
@@ -48,7 +49,7 @@ static cmd_buffer tx_buf;
 
 void jtag_task()
 {
-    #ifdef MULTICORE
+#ifdef MULTICORE
     if (multicore_fifo_rvalid())
     {
         //some command processing has been done
@@ -58,7 +59,7 @@ void jtag_task()
 
     }
 #endif
-    if ((buffer_infos[rx_buffer_number].busy == false)) 
+    if ((buffer_infos[wr_buffer_number].busy == false)) 
     {
         //If tud_task() is called and tud_vendor_read isn't called immediately (i.e before calling tud_task again)
         //after there is data available, there is a risk that data from 2 BULK OUT transaction will be (partially) combined into one
@@ -66,17 +67,16 @@ void jtag_task()
         tud_task();// tinyusb device task
         if (tud_vendor_available())
         {
-            uint count = tud_vendor_read(buffer_infos[rx_buffer_number].buffer, 64);
+            uint bnum = wr_buffer_number;
+            uint count = tud_vendor_read(buffer_infos[wr_buffer_number].buffer, 64);
             if (count != 0)
             {
-                buffer_infos[rx_buffer_number].count = count;
-    #ifdef MULTICORE
-                buffer_infos[rx_buffer_number].busy = true;
-                multicore_fifo_push_blocking(rx_buffer_number);
-                rx_buffer_number = 1 - rx_buffer_number;
-    #else
-                cmd_handle(&jtag, buffer_infos[rx_buffer_number].buffer, buffer_infos[rx_buffer_number].count, tx_buf);
-    #endif
+                buffer_infos[bnum].count = count;
+                buffer_infos[bnum].busy = true;
+                wr_buffer_number = 1 - wr_buffer_number; //switch buffer
+#ifdef MULTICORE
+                multicore_fifo_push_blocking(bnum);
+#endif
             }
         }
 
@@ -101,6 +101,19 @@ void core1_entry() {
 }
 #endif
 
+void fetch_command()
+{
+#ifndef MULTICORE
+    if (buffer_infos[rd_buffer_number].busy)
+    {
+        cmd_handle(&jtag, buffer_infos[rd_buffer_number].buffer, buffer_infos[rd_buffer_number].count, tx_buf);
+        buffer_infos[rd_buffer_number].busy = false;
+        rd_buffer_number = 1 - rd_buffer_number; //switch buffer
+    }
+#endif
+}
+
+
 
 int main()
 {
@@ -114,5 +127,6 @@ int main()
 #endif
     while (1) {
         jtag_task();
+        fetch_command();//for unicore implementation
     }
 }
