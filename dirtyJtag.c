@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "pico/binary_info.h"
 #include "hardware/pio.h"
 #include "pico/multicore.h"
 #include "pio_jtag.h"
 #include "bsp/board.h"
-#include "get_serial.h"
 #include "tusb.h"
 #include "cmd.h"
 
@@ -20,6 +20,8 @@
 
 void init_pins()
 {
+    bi_decl(bi_4pins_with_names(PIN_TCK, "TCK", PIN_TDI, "TDI", PIN_TDO, "TDO", PIN_TMS, "TMS"));
+    bi_decl(bi_2pins_with_names(PIN_RST, "RST", PIN_TRST, "TRST"));
 }
 
 pio_jtag_inst_t jtag = {
