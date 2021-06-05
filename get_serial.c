@@ -23,7 +23,7 @@
  *
  */
 
-#include <stdint.h>
+#include "pico/types.h"
 #include "pico/unique_id.h"
 #include "get_serial.h"
 
