@@ -7,6 +7,7 @@
 #include "bsp/board.h"
 #include "tusb.h"
 #include "cmd.h"
+#include "get_serial.h"
 
 #define PIN_TDI 16 
 #define PIN_TDO 17
@@ -135,6 +136,7 @@ void fetch_command()
 int main()
 {
     board_init();
+    usb_serial_init();
     tusb_init();
 
 #ifdef MULTICORE
