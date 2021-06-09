@@ -131,6 +131,8 @@ void fetch_command()
 #endif
 }
 
+//this is to work around the fact that tinyUSB does not handle setup request automatically
+//Hence this boiler plate code
 bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request)
 {
     if (stage != CONTROL_STAGE_SETUP) return true;
