@@ -26,4 +26,4 @@
  * @param transfer Received packet
  * @return Command needs to send data back to host
  */
-uint8_t cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* tx_buf);
+void cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* tx_buf);

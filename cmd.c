@@ -139,7 +139,7 @@ static void cmd_setvoltage(const uint8_t *commands);
  */
 static void cmd_gotobootloader(void);
 
-uint8_t cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* tx_buf) {
+void cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* tx_buf) {
   uint8_t *commands= (uint8_t*)rxbuf;
   
   while (*commands != CMD_STOP) {
@@ -158,7 +158,7 @@ uint8_t cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_
     case CMD_XFER|EXTEND_LENGTH:
     case CMD_XFER|NO_READ|EXTEND_LENGTH:
       cmd_xfer(jtag, commands, *commands & EXTEND_LENGTH, *commands & NO_READ, tx_buf);
-      return !!(*commands & NO_READ);
+      return;
       break;
 
     case CMD_SETSIG:
@@ -168,19 +168,11 @@ uint8_t cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_
 
     case CMD_GETSIG:
       cmd_getsig(jtag);
-      return 0;
       break;
 
     case CMD_CLK:
       cmd_clk(jtag, commands, !!(*commands & READOUT));
-      if (*commands & READOUT)
-      {
-        return 0;
-      }
-      else
-      {
-        commands += 2;
-      }
+      commands += 2;
       break;
 
     case CMD_SETVOLTAGE:
@@ -193,14 +185,14 @@ uint8_t cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_
       break;
       
     default:
-      return 1; /* Unsupported command, halt */
+      return; /* Unsupported command, halt */
       break;
     }
 
     commands++;
   }
 
-  return 1;
+  return;
 }
 
 static void cmd_info() {

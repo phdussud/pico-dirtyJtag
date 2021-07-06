@@ -27,4 +27,4 @@ cmake ..
 make
 ```
 
-If everything success you should have a `dirtyJtag.uf2` file you can directly upload to the Pi Pico.
+If everything succeeds you should have a `dirtyJtag.uf2` file that you can directly upload to the Pi Pico.
