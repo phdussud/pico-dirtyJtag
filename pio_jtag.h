@@ -37,7 +37,8 @@ static inline void jtag_set_tms(const pio_jtag_inst_t *jtag, bool value)
 }
 static inline void jtag_set_rst(const pio_jtag_inst_t *jtag, bool value)
 {
-    gpio_put(jtag->pin_rst, value);
+    /* Change the direction to out to drive pin to 0 or to in to emulate open drain */
+    gpio_set_dir(jtag->pin_rst, !value);
 }
 static inline void jtag_set_trst(const pio_jtag_inst_t *jtag, bool value)
 {

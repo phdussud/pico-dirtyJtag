@@ -7,6 +7,32 @@ void jtag_task();//to process USB OUT packets while waiting for DMA to finish
 
 #define DMA
 
+#if 0
+static bool pins_source = false; //false: PIO, true: GPIO
+
+static void switch_pins_source(const pio_jtag_inst_t *jtag, bool gpio)
+{
+    if (pins_source != gpio)
+    {
+        if (gpio)
+        {
+            gpio_put(jtag->pin_tdi, gpio_get(jtag->pin_tdi));
+            gpio_set_function(jtag->pin_tdi, GPIO_FUNC_SIO);
+            gpio_put(jtag->pin_tck, gpio_get(jtag->pin_tck));
+            gpio_set_function(jtag->pin_tck, GPIO_FUNC_SIO);
+            gpio_set_dir_out_masked((1 << jtag->pin_tdi) | (1 << jtag->pin_tck));
+        }
+        else
+        {
+            gpio_set_function(jtag->pin_tdi, GPIO_FUNC_PIO0);
+            gpio_set_function(jtag->pin_tck, GPIO_FUNC_PIO0);
+        }
+        pins_source = gpio;
+    }
+}
+#endif
+
+
 
 #ifdef DMA
 
@@ -215,12 +241,13 @@ uint8_t __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t 
 
 static void init_pins(uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)
 {
+    // emulate open drain with pull up and direction
+    gpio_pull_up(pin_rst);
     gpio_clr_mask((1u << pin_tms) | (1u << pin_rst) | (1u << pin_trst));
     gpio_init_mask((1u << pin_tms) | (1u << pin_rst) | (1u << pin_trst));
-    gpio_set_dir_masked( (1u << pin_tms) | (1u << pin_rst) | (1u << pin_trst), 0xffffffffu);
+    gpio_set_dir_masked( (1u << pin_tms) | (1u << pin_trst), 0xffffffffu);
+    gpio_set_dir(pin_rst, false);
 }
-
-
 
 void init_jtag(pio_jtag_inst_t* jtag, uint freq, uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)
 {
