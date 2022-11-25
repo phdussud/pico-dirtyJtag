@@ -1,5 +1,6 @@
 /*
   Copyright (c) 2017 Jean THOMAS.
+  Copyright (c) 2020-2022 Patrick Dussud
   
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the "Software"),
@@ -68,12 +69,11 @@ enum SignalIdentifier {
  *
  * CMD_INFO returns a string to the host software. This
  * could be used to check DirtyJTAG firmware version
- * or supported commands. As of now it is implemented
- * but not usefull.
+ * or supported commands.
  *
  * @param usbd_dev USB device
  */
-static void cmd_info();
+static uint32_t  cmd_info(uint8_t *buffer);
 
 /**
  * @brief Handle CMD_FREQ command
@@ -93,7 +93,7 @@ static void cmd_freq(pio_jtag_inst_t* jtag, const uint8_t *commands);
  * @param usbd_dev USB device
  * @param commands Command data
  */
-static void cmd_xfer(pio_jtag_inst_t* jtag, const uint8_t *commands, bool extend_length, bool no_read, uint8_t* tx_buf);
+static uint32_t cmd_xfer(pio_jtag_inst_t* jtag, const uint8_t *commands, bool extend_length, bool no_read, uint8_t* tx_buf);
 
 /**
  * @brief Handle CMD_SETSIG command
@@ -111,7 +111,7 @@ static void cmd_setsig(pio_jtag_inst_t* jtag, const uint8_t *commands);
  * 
  * @param usbd_dev USB device
  */
-static void cmd_getsig(pio_jtag_inst_t* jtag);
+static uint32_t cmd_getsig(pio_jtag_inst_t* jtag, uint8_t *buffer);
 
 /**
  * @brief Handle CMD_CLK command
@@ -122,7 +122,7 @@ static void cmd_getsig(pio_jtag_inst_t* jtag);
  * @param commands Command data
  * @param readout Enable TDO readout
  */
-static void cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout);
+static uint32_t cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout, uint8_t *buffer);
 /**
  * @brief Handle CMD_SETVOLTAGE command
  *
@@ -141,40 +141,47 @@ static void cmd_gotobootloader(void);
 
 void cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* tx_buf) {
   uint8_t *commands= (uint8_t*)rxbuf;
-  
-  while (*commands != CMD_STOP) {
+  uint8_t *output_buffer = tx_buf;
+  while ((commands < (rxbuf + count)) && (*commands != CMD_STOP))
+  {
     switch ((*commands)&0x0F) {
     case CMD_INFO:
-      cmd_info();
+    {
+      uint32_t trbytes = cmd_info(output_buffer);
+      output_buffer += trbytes;
       break;
-      
+    }
     case CMD_FREQ:
       cmd_freq(jtag, commands);
       commands += 2;
       break;
 
     case CMD_XFER:
-    case CMD_XFER|NO_READ:
-    case CMD_XFER|EXTEND_LENGTH:
-    case CMD_XFER|NO_READ|EXTEND_LENGTH:
-      cmd_xfer(jtag, commands, *commands & EXTEND_LENGTH, *commands & NO_READ, tx_buf);
-      return;
+    {
+      bool no_read = *commands & NO_READ;
+      uint32_t trbytes = cmd_xfer(jtag, commands, *commands & EXTEND_LENGTH, no_read, output_buffer);
+      commands += 1 + trbytes;
+      output_buffer += (no_read ? 0 : trbytes);
       break;
-
+    }
     case CMD_SETSIG:
       cmd_setsig(jtag, commands);
       commands += 2;
       break;
 
     case CMD_GETSIG:
-      cmd_getsig(jtag);
+    {
+      uint32_t trbytes = cmd_getsig(jtag, output_buffer);
+      output_buffer += trbytes;
       break;
-
+    }
     case CMD_CLK:
-      cmd_clk(jtag, commands, !!(*commands & READOUT));
+    {
+      uint32_t trbytes = cmd_clk(jtag, commands, !!(*commands & READOUT), output_buffer);
+      output_buffer += trbytes;
       commands += 2;
       break;
-
+    }
     case CMD_SETVOLTAGE:
       cmd_setvoltage(commands);
       commands += 1;
@@ -191,14 +198,18 @@ void cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* 
 
     commands++;
   }
-
+  /* Send the transfer response back to host */
+  if (tx_buf != output_buffer)
+  {
+    tud_vendor_write(tx_buf, output_buffer - tx_buf);
+  }
   return;
 }
 
-static void cmd_info() {
+static uint32_t cmd_info(uint8_t *buffer) {
   char info_string[10] = "DJTAG2\n";
-
-  tud_vendor_write((uint8_t*)info_string, 10);
+  memcpy(buffer, info_string, 10);
+  return 10;
 }
 
 static void cmd_freq(pio_jtag_inst_t* jtag, const uint8_t *commands) {
@@ -207,34 +218,31 @@ static void cmd_freq(pio_jtag_inst_t* jtag, const uint8_t *commands) {
 
 //static uint8_t output_buffer[64];
 
-static void cmd_xfer(pio_jtag_inst_t* jtag, const uint8_t *commands, bool extend_length, bool no_read, uint8_t* tx_buf) {
+static uint32_t cmd_xfer(pio_jtag_inst_t* jtag, const uint8_t *commands, bool extend_length, bool no_read, uint8_t* tx_buf) {
   uint16_t transferred_bits;
   uint8_t* output_buffer = 0;
-  
-  /* Fill the output buffer with zeroes */
-  if (!no_read) {
-    output_buffer = tx_buf;
-    memset(output_buffer, 0, 64);
+  transferred_bits = commands[1];
+  if (extend_length)
+  {
+    transferred_bits += 256;
+  }
+  // Ensure we don't do over-read
+  if (transferred_bits > 62 * 8)
+  {
+    return transferred_bits = 62 * 8;
   }
 
-  /* This is the number of transfered bits in one transfer command */
-  transferred_bits = commands[1];
-  if (extend_length) {
-    transferred_bits += 256;
-    // Ensure we don't do over-read
-    if (transferred_bits > 62*8) {
-      return;
-    }
+  /* Fill the output buffer with zeroes */
+  if (!no_read)
+  {
+    output_buffer = tx_buf;
+    memset(output_buffer, 0, (transferred_bits + 7) / 8);
   }
+
   jtag_transfer(jtag, transferred_bits, commands+2, output_buffer);
 
-  /* Send the transfer response back to host */
-  if (!no_read) {
-    tud_vendor_write(output_buffer, (transferred_bits + 7)/8);
-  }
+  return (transferred_bits + 7) / 8;
 }
-
-
 
 static void cmd_setsig(pio_jtag_inst_t* jtag, const uint8_t *commands) {
   uint8_t signal_mask, signal_status;
@@ -263,16 +271,18 @@ static void cmd_setsig(pio_jtag_inst_t* jtag, const uint8_t *commands) {
   }
 }
 
-static void cmd_getsig(pio_jtag_inst_t* jtag) {
+static uint32_t cmd_getsig(pio_jtag_inst_t* jtag, uint8_t *buffer)
+{
   uint8_t signal_status = 0;
   
   if (jtag_get_tdo(jtag)) {
     signal_status |= SIG_TDO;
   }
-  tud_vendor_write(&signal_status, 1);
+  buffer[0] = signal_status;
+  return 1;
 }
 
-static void cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout)
+static uint32_t cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout, uint8_t *buffer)
 {
   uint8_t signals, clk_pulses;
   signals = commands[1];
@@ -281,9 +291,9 @@ static void cmd_clk(pio_jtag_inst_t *jtag, const uint8_t *commands, bool readout
 
   if (readout)
   {
-    tud_vendor_write(&readout_val, 1);
+    buffer[0] = readout_val;
   }
-  
+  return readout ? 1 : 0;
 }
 
 static void cmd_setvoltage(const uint8_t *commands) {
