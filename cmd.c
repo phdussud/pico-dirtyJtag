@@ -202,6 +202,7 @@ void cmd_handle(pio_jtag_inst_t* jtag, uint8_t* rxbuf, uint32_t count, uint8_t* 
   if (tx_buf != output_buffer)
   {
     tud_vendor_write(tx_buf, output_buffer - tx_buf);
+    tud_vendor_flush();
   }
   return;
 }
@@ -229,7 +230,7 @@ static uint32_t cmd_xfer(pio_jtag_inst_t* jtag, const uint8_t *commands, bool ex
   // Ensure we don't do over-read
   if (transferred_bits > 62 * 8)
   {
-    return transferred_bits = 62 * 8;
+    transferred_bits = 62 * 8;
   }
 
   /* Fill the output buffer with zeroes */
