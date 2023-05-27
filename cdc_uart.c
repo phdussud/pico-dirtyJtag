@@ -30,12 +30,9 @@
 
 // #include "platform.h"
 
-#define USBUSART_TX 28
-#define USBUSART_RX 29
-#define USBUSART_INTERFACE uart0
 #define USBUSART_BAUDRATE 115200
+// Assuming just one CDC interface
 #define UART_PORT_ITF 0
-
 
 /* For speed this is set to the USB transfer size */
 #define FULL_SWO_PACKET (64)
@@ -47,6 +44,7 @@ volatile static uint8_t rx_buf[RX_BUFFER_SIZE];
 
 
 uart_inst_t *uart;
+uint uartIndex;
 
 static uint rx_dma_channel;
 static uint tx_dma_channel;
@@ -124,6 +122,7 @@ uint setup_usart_rx_dma(uart_inst_t *uart, volatile void *rx_address, irq_handle
 
 void cdc_uart_init( uart_inst_t *const uart_, int uart_rx_pin, int uart_tx_pin )  {
     uart = uart_;
+    uartIndex = uart_get_index( uart );
 
 	gpio_set_function(uart_tx_pin, GPIO_FUNC_UART);
 	gpio_set_function(uart_rx_pin, GPIO_FUNC_UART);
@@ -228,10 +227,10 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
 {
 	if (itf != UART_PORT_ITF)
 	  return;
-	uart_deinit(USBUSART_INTERFACE);
+	uart_deinit(uart);
 	tud_cdc_n_write_clear(itf);
 	tud_cdc_n_read_flush(itf);
-	uart_init(USBUSART_INTERFACE, line_coding->bit_rate);
+	uart_init(uart, line_coding->bit_rate);
 }
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)

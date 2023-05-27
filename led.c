@@ -15,14 +15,14 @@ void led_init( bool inverted, int ledRxPin, int ledTXPin, int ledErrorPin_ ) {
     if ( LedTxPin != -1 ) {
         gpio_init( LedTxPin);
         gpio_set_dir(LedTxPin, GPIO_OUT);
-        gpio_put(LedTxPin, (LedInverted) ? 0 : 1);
+        gpio_put(LedTxPin, (LedInverted) ? 1 : 0);
     }
 
     if ( LedTxPin != LedRxPin ) {
         if ( LedRxPin != -1 ) {
             gpio_init( LedRxPin);
             gpio_set_dir(LedRxPin, GPIO_OUT);
-            gpio_put(LedRxPin, (LedInverted) ? 0 : 1);
+            gpio_put(LedRxPin, (LedInverted) ? 1 : 0);
         }
     }
 
@@ -30,7 +30,7 @@ void led_init( bool inverted, int ledRxPin, int ledTXPin, int ledErrorPin_ ) {
         if ( LedErrorPin != -1 ) {
             gpio_init( LedErrorPin);
             gpio_set_dir(LedErrorPin, GPIO_OUT);
-            gpio_put(LedErrorPin, (LedInverted) ? 0 : 1 );
+            gpio_put(LedErrorPin, (LedInverted) ? 1 : 0 );
         }
     }
 }
