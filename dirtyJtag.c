@@ -4,18 +4,14 @@
 #include "hardware/pio.h"
 #include "pico/multicore.h"
 #include "pio_jtag.h"
+#include "cdc_uart.h"
+#include "led.h"
 #include "bsp/board.h"
 #include "tusb.h"
 #include "cmd.h"
 #include "get_serial.h"
 
-#define PIN_TDI 16 
-#define PIN_TDO 17
-#define PIN_TCK 18
-#define PIN_TMS 19
-#define PIN_RST 20
-#define PIN_TRST 21
-
+#include "dirtyJtagConfig.h"
 
 #define MULTICORE
 
@@ -71,6 +67,7 @@ void jtag_main_task()
         tud_task();// tinyusb device task
         if (tud_vendor_available())
         {
+            led_rx( 1 );
             uint bnum = wr_buffer_number;
             uint count = tud_vendor_read(buffer_infos[wr_buffer_number].buffer, 64);
             if (count != 0)
@@ -86,10 +83,13 @@ void jtag_main_task()
                 multicore_fifo_push_blocking(bnum);
 #endif
             }
+            led_rx( 0 );
+        } else {
+#if ( USB_CDC_UART_BRIDGE )           
+            cdc_uart_task();
+#endif
         }
-
-    }       
-
+    }
 }
 
 void jtag_task()
@@ -144,6 +144,11 @@ int main()
     board_init();
     usb_serial_init();
     tusb_init();
+
+    led_init( LED_INVERTED, PIN_LED_TX, PIN_LED_RX, PIN_LED_ERROR );
+#if ( USB_CDC_UART_BRIDGE )
+    cdc_uart_init( PIN_UART, PIN_UART_RX, PIN_UART_TX );
+#endif
 
 #ifdef MULTICORE
     multicore_launch_core1(core1_entry);

@@ -25,8 +25,10 @@ add_executable(dirtyJtag
 		dirtyJtag.c
 		usb_descriptors.c
 		pio_jtag.c
+        cdc_uart.c
 		get_serial.c
 		cmd.c
+        led.c
 )
 
 target_include_directories(dirtyJtag PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
