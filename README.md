@@ -23,7 +23,17 @@ An additional feature provides a bridge to an external UART.  This is often usef
 
 ## Configuration
 
-Other configurations and RP2040 boards are supported.  The following values control where the code expects to find functionality.  Of course, not all pins can can be used for all functions.  Take care, especially with the UART pins, to ensure compatiblity.
+Other configurations and RP2040 boards are supported.  
+
+Select the board you want to use, or define a new one.
+
+``` C
+#define BOARD_TYPE BOARD_PICO
+//#define BOARD_TYPE BOARD_ADAFRUIT_ITSY
+//#define BOARD_TYPE BOARD_SPOKE_RP2040
+```
+
+The following values control where the code expects to find functionality.  Of course, not all pins can can be used for all functions.  Take care, especially with the UART pins, to ensure compatibility.
 
 ``` C
 #define PIN_TDI 16 
@@ -75,7 +85,7 @@ Bus 003 Device 112: ID 1209:c0ca Generic Jean THOMAS DirtyJTAG
 ...
 ```
 
-You can connect to JTAG functionality using `UrJTAG`, `openFPGALoader` or other JTAG tools.  
+You can connect to JTAG functionality using `UrJTAG`, `openFPGALoader` or other JTAG tools.  Depending on how your system is set up, you may have to run these commands as root.
 
 For example, using `openFPGALoader`, the following command will connect to the Pico and read the IDCODE from the attached device:
 
