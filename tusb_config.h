@@ -26,6 +26,8 @@
 #ifndef _TUSB_CONFIG_H_
 #define _TUSB_CONFIG_H_
 
+#include "dirtyJtagConfig.h"
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -63,10 +65,19 @@
 
 //------------- CLASS -------------//
 #define CFG_TUD_HID             0
+#if ( USB_CDC_UART_BRIDGE )
+#define CFG_TUD_CDC             1
+#else
 #define CFG_TUD_CDC             0
+#endif
 #define CFG_TUD_MSC             0
 #define CFG_TUD_MIDI            0
 #define CFG_TUD_VENDOR          1
+
+#if ( USB_CDC_UART_BRIDGE )
+#define CFG_TUD_CDC_RX_BUFSIZE    256
+#define CFG_TUD_CDC_TX_BUFSIZE    256
+#endif
 
 #define CFG_TUD_VENDOR_RX_BUFSIZE 128
 #define CFG_TUD_VENDOR_TX_BUFSIZE 64
