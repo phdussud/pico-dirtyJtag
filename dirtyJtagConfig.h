@@ -4,14 +4,16 @@
 // Set to 0 to disable USB-CDC-UART bridge
 #define USB_CDC_UART_BRIDGE  1
 
-#define BOARD_PICO           0
-#define BOARD_ADAFRUIT_ITSY  1
-#define BOARD_SPOKE_RP2040   2
+#define BOARD_PICO                        0
+#define BOARD_ADAFRUIT_ITSY               1
+#define BOARD_SPOKE_RP2040                2
+#define BOARD_QMTECH_RP2040_DAUGHTERBOARD 3
 
 // Select the board type from the above
 #define BOARD_TYPE BOARD_PICO
 //#define BOARD_TYPE BOARD_ADAFRUIT_ITSY
 //#define BOARD_TYPE BOARD_SPOKE_RP2040
+//#define BOARD_TYPE BOARD_QMTECH_RP2040_DAUGHTERBOARD
 
 // General mapping
 // TDI  SPIO RX
@@ -81,6 +83,28 @@
 #define PIN_UART_TX    28
 #define PIN_UART_RX    29
 #endif // USB_CDC_UART_BRIDGE
+
+#elif ( BOARD_TYPE == BOARD_QMTECH_RP2040_DAUGHTERBOARD )
+
+// in rp2040 daughterboard UART pins are connected to FPGA pins
+// depending on the FPGA pin configuration there is a possibility
+// of damage so these pins are not going to be setup
+#define USB_CDC_UART_BRIDGE  0
+
+#define PIN_TDI  16 
+#define PIN_TDO  17
+#define PIN_TCK  18
+#define PIN_TMS  19
+// in rp2040 daughterboard these pins are connected to FPGA pins
+// depending on the FPGA pin configuration there is a possibility
+// of damage so these pins are not going to be setup
+// #define PIN_RST  X
+// #define PIN_TRST X
+
+#define LED_INVERTED   0
+#define PIN_LED_TX     25
+#define PIN_LED_ERROR  25
+#define PIN_LED_RX     25
 
 #endif // BOARD_TYPE
 
