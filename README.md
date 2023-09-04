@@ -25,13 +25,14 @@ An additional feature provides a bridge to an external UART.  This is often usef
 
 Other configurations and RP2040 boards are supported.  
 
-Select the board you want to use, or define a new one.
+In `dirtyJtagConfig.h`, select the board you want to use, or define a new one.
 
 ``` C
 #define BOARD_TYPE BOARD_PICO
 //#define BOARD_TYPE BOARD_ADAFRUIT_ITSY
 //#define BOARD_TYPE BOARD_SPOKE_RP2040
 //#define BOARD_TYPE BOARD_WERKZEUG
+//#define BOARD_TYPE BOARD_QMTECH_RP2040_DAUGHTERBOARD
 ```
 
 The following values control where the code expects to find functionality.  Of course, not all pins can can be used for all functions.  Take care, especially with the UART pins, to ensure compatibility.
