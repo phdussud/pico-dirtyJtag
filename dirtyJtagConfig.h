@@ -7,7 +7,7 @@
 #define BOARD_PICO           0
 #define BOARD_ADAFRUIT_ITSY  1
 #define BOARD_SPOKE_RP2040   2
-#define BOARD_WERKZEUG       3
+#define BOARD_WERKZEUG       4
 
 // Select the board type from the above
 #define BOARD_TYPE BOARD_PICO
