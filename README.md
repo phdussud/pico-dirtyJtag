@@ -31,6 +31,7 @@ Select the board you want to use, or define a new one.
 #define BOARD_TYPE BOARD_PICO
 //#define BOARD_TYPE BOARD_ADAFRUIT_ITSY
 //#define BOARD_TYPE BOARD_SPOKE_RP2040
+//#define BOARD_TYPE BOARD_WERKZEUG
 ```
 
 The following values control where the code expects to find functionality.  Of course, not all pins can can be used for all functions.  Take care, especially with the UART pins, to ensure compatibility.
