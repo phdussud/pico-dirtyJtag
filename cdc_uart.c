@@ -29,6 +29,20 @@
 #include "tusb.h"
 #include "cdc_uart.h"
 
+struct uart_device
+{
+	uint index;
+	uart_inst_t *inst;
+	uint8_t tx_buf[TX_BUFFER_SIZE];
+	volatile uint8_t rx_buf[RX_BUFFER_SIZE];
+	uint rx_dma_channel;
+	uint tx_dma_channel;
+	volatile uint8_t *tx_write_address;
+	uint8_t *rx_read_address;
+	uint n_checks;
+	uint is_connected;
+} uart_devices[2];
+
 static void dma_handler();
 
 static uint n_bits(uint n)
