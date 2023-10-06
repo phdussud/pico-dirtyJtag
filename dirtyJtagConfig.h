@@ -41,9 +41,13 @@
 #define PIN_LED_RX     25
 
 #if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART       uart0
-#define PIN_UART_TX    12
-#define PIN_UART_RX    13
+#define PIN_UART_INTF_COUNT 2
+#define PIN_UART0 uart0
+#define PIN_UART0_TX    12
+#define PIN_UART0_RX    13
+#define PIN_UART1 uart1
+#define PIN_UART1_TX    4
+#define PIN_UART1_RX    5
 #endif // USB_CDC_UART_BRIDGE
 
 #elif ( BOARD_TYPE == BOARD_ADAFRUIT_ITSY )
@@ -62,9 +66,10 @@
 #define PIN_LED_RX     -1
 
 #if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART       uart0
-#define PIN_UART_TX    0
-#define PIN_UART_RX    1
+#define PIN_UART_INTF_COUNT 1
+#define PIN_UART0       uart0
+#define PIN_UART0_TX    0
+#define PIN_UART0_RX    1
 #endif // USB_CDC_UART_BRIDGE
 
 #elif ( BOARD_TYPE == BOARD_SPOKE_RP2040 )
@@ -82,9 +87,10 @@
 #define PIN_LED_RX     18
 
 #if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART       uart0
-#define PIN_UART_TX    28
-#define PIN_UART_RX    29
+#define PIN_UART_INTF_COUNT 1
+#define PIN_UART0       uart0
+#define PIN_UART0_TX    28
+#define PIN_UART0_RX    29
 #endif // USB_CDC_UART_BRIDGE
 
 
@@ -103,9 +109,10 @@
 #define PIN_LED_RX     20
 
 #if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART       uart0
-#define PIN_UART_TX    28
-#define PIN_UART_RX    29
+#define PIN_UART_INTF_COUNT 1
+#define PIN_UART0       uart0
+#define PIN_UART0_TX    28
+#define PIN_UART0_RX    29
 #endif // USB_CDC_UART_BRIDGE
 #elif ( BOARD_TYPE == BOARD_QMTECH_RP2040_DAUGHTERBOARD )
 
