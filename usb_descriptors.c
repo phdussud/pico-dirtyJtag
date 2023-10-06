@@ -48,7 +48,7 @@ tusb_desc_device_t const desc_device =
 
 	  .idVendor = 0x1209,
 	  .idProduct = 0xC0CA,
-	  .bcdDevice = 0x0110,
+	  .bcdDevice = 0x0111,
     .iManufacturer      = 0x01,
     .iProduct           = 0x02,
     .iSerialNumber      = 0x03,
@@ -105,7 +105,7 @@ uint8_t const desc_configuration[CONFIG_TOTAL_LEN] =
 #if ( USB_CDC_UART_BRIDGE )
   // Interface 3 : Interface number, string index, EP notification address and size, EP data address (out, in) and size.
   TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 4, CDC_NOTIF_EP1_NUM, 8, CDC_OUT_EP1_NUM, CDC_IN_EP1_NUM, 64),
-  TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_2, 4, CDC_NOTIF_EP2_NUM, 8, CDC_OUT_EP2_NUM, CDC_IN_EP2_NUM, 64),
+  TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_2, 5, CDC_NOTIF_EP2_NUM, 8, CDC_OUT_EP2_NUM, CDC_IN_EP2_NUM, 64),
 #endif
 };
 
@@ -123,14 +123,15 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index)
 //--------------------------------------------------------------------+
 
 // array of pointer to string descriptors
-char const* string_desc_arr [] =
+char const *string_desc_arr[] =
 {
-  (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
-  "Jean THOMAS", // 1: Manufacturer
-  "DirtyJTAG",    // 2: Product
-  usb_serial,     // 3: Serial, uses flash unique ID
+    (const char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
+    "Jean THOMAS",              // 1: Manufacturer
+    "DirtyJTAG",                // 2: Product
+    usb_serial,                 // 3: Serial, uses flash unique ID
 #if ( USB_CDC_UART_BRIDGE )
-  "DirtyJTAG CDC",// 4: CDC Interface  
+    "DirtyJTAG CDC 0", // 4: CDC Interface 0
+    "DirtyJTAG CDC 1"  // 5: CDC Interface 1
 #endif
 };
 
