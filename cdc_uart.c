@@ -28,12 +28,12 @@
 #include "led.h"
 #include "tusb.h"
 #include "cdc_uart.h"
-
-struct uart_device
+static uint8_t tx_bufs[2][TX_BUFFER_SIZE] __attribute__((aligned(TX_BUFFER_SIZE)));
+static struct uart_device
 {
 	uint index;
 	uart_inst_t *inst;
-	uint8_t tx_buf[TX_BUFFER_SIZE];
+	uint8_t *tx_buf;
 	volatile uint8_t rx_buf[RX_BUFFER_SIZE];
 	uint rx_dma_channel;
 	uint tx_dma_channel;
@@ -74,7 +74,7 @@ uint setup_usart_tx_dma(uart_inst_t *uart, void *tx_address, uint buffer_size)
 	dma_channel_configure(
 		dma_chan,
 		&c,
-		&uart_get_hw(uart)->dr, // Write Address
+		&uart_get_hw(uart)->dr, // Write Ad
 		tx_address,             // Read Address
 		0,                      // transfer count
 		false                   // start
@@ -128,9 +128,10 @@ void cdc_uart_init( uart_inst_t *const uart_, int uart_rx_pin, int uart_tx_pin )
 	uart_set_hw_flow(uart->inst, false, false);
 	uart_set_format(uart->inst, 8, 1, UART_PARITY_NONE);
 	uart_set_fifo_enabled(uart->inst, true);
-	uart->tx_dma_channel = setup_usart_tx_dma(uart->inst, &uart->tx_buf[0], TX_BUFFER_SIZE);
+	uart->tx_buf = tx_bufs[uart_index];
+	uart->tx_dma_channel = setup_usart_tx_dma(uart->inst, uart->tx_buf, TX_BUFFER_SIZE);
 	uart->rx_dma_channel = setup_usart_rx_dma(uart->inst, &uart->rx_buf[0], dma_handler, RX_BUFFER_SIZE);
-	uart->tx_write_address = &uart->tx_buf[0];
+	uart->tx_write_address = uart->tx_buf;
 	uart->rx_read_address = (uint8_t *)&uart->rx_buf[0];
 	uart->n_checks = 0; 
 }
@@ -152,7 +153,9 @@ static void dma_handler()
 		if (ints & (1 << uart->tx_dma_channel)) //(dma_channel_hw_addr(tx_dma_channel)->transfer_count == 0) // (dma_channel_get_irq1_status(tx_dma_channel))
 		{
 			uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
-			size_t space = (uart->tx_write_address >= ra) ? (uart->tx_write_address - ra) : (uart->tx_write_address + TX_BUFFER_SIZE - ra);
+			// cdc_uart_task can modify uart->tx_write_address. cache it locally
+			volatile uint8_t *l_tx_write_address = uart->tx_write_address;
+			size_t space = (l_tx_write_address >= ra) ? (l_tx_write_address - ra) : (l_tx_write_address + TX_BUFFER_SIZE - ra);
 			if (space > 0)
 				dma_channel_set_trans_count(uart->tx_dma_channel, space, true);
 		}
