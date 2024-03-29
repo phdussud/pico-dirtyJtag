@@ -222,7 +222,8 @@ void cdc_uart_task(void)
 				{
 					uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
 					size_t space = (uart->tx_write_address >= ra) ? (uart->tx_write_address - ra) : (uart->tx_write_address + TX_BUFFER_SIZE - ra);
-					dma_channel_set_trans_count(uart->tx_dma_channel, space, true);
+					if (space > 0)
+						dma_channel_set_trans_count(uart->tx_dma_channel, space, true);
 				}
 				led_rx( 0 );
 			}
