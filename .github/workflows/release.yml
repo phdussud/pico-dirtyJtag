@@ -6,7 +6,6 @@ on:
       - "v*"
 
 
-
 jobs:
     release_build:
         name: Build release
