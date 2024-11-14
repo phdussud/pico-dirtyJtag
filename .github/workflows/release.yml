@@ -30,3 +30,19 @@ jobs:
                   name: workspace_artifacts
                   path: ${{steps.build.outputs.output_dir}}
 
+    do_release:
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+        
+      needs: release_build
+
+      steps: 
+        - uses: actions/download-artifact@v3
+          with:
+            name: Build
+            path: build
+        - run: zip -r build.zip build/
+        - uses: ncipollo/release-action@v1
+          with:
+            artifacts: "build.zip"
