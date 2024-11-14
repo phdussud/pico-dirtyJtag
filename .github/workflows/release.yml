@@ -1,3 +1,12 @@
+name: "tagged-release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+
+
 jobs:
     test_build:
         name: Build release
