@@ -21,7 +21,7 @@ jobs:
       - name: 'Configure'
         run: |
           mkdir -p build
-          cmake -B build
+          cmake -B build -DPICO_SDK_PATH=./pico-sdk
 
       - name: 'Build'
         run: |
