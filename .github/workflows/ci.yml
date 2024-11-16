@@ -28,8 +28,8 @@ jobs:
           make -C build
 
       - name: 'Upload binary'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: pico-uart-bridge.uf2
-          path: build/uart_bridge.uf2
-          retention-days: 5
+          name: dirtyJtag.uf2
+          path: build/dirtyJtag.uf2
+          retention-days: 15
