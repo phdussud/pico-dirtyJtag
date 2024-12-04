@@ -43,7 +43,7 @@
 #define PIN_LED_RX     25
 
 #if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART_INTF_COUNT 2
+#define PIN_UART_INTF_COUNT 1
 #define PIN_UART0 uart0
 #define PIN_UART0_TX    12
 #define PIN_UART0_RX    13
