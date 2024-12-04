@@ -66,16 +66,12 @@
 //------------- CLASS -------------//
 #define CFG_TUD_HID             0
 
-#if ( USB_CDC_UART_BRIDGE )
-	#define CFG_TUD_CDC PIN_UART_INTF_COUNT
-#else
-#define CFG_TUD_CDC             0
-#endif
+#define CFG_TUD_CDC CDC_UART_INTF_COUNT
 #define CFG_TUD_MSC             0
 #define CFG_TUD_MIDI            0
 #define CFG_TUD_VENDOR          1
 
-#if ( USB_CDC_UART_BRIDGE )
+#if ( CDC_UART_INTF_COUNT > 0 )
 #define CFG_TUD_CDC_RX_BUFSIZE    256
 #define CFG_TUD_CDC_TX_BUFSIZE    256
 #endif

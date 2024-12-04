@@ -1,8 +1,8 @@
 #ifndef DirtyJtagConfig_h
 #define DirtyJtagConfig_h
 
-// Set to 0 to disable USB-CDC-UART bridge
-#define USB_CDC_UART_BRIDGE  1
+
+
 
 
 #define BOARD_PICO           0
@@ -28,6 +28,8 @@
 // RST  GPIO
 // TRST GPIO
 
+// Set CDC_UART_INTF_COUNT to 0 to disable USB-CDC-UART bridge
+
 #if ( BOARD_TYPE == BOARD_PICO )
 
 #define PIN_TDI 16 
@@ -42,15 +44,13 @@
 #define PIN_LED_ERROR  25
 #define PIN_LED_RX     25
 
-#if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART_INTF_COUNT 1
+#define CDC_UART_INTF_COUNT 2
 #define PIN_UART0 uart0
 #define PIN_UART0_TX    12
 #define PIN_UART0_RX    13
 #define PIN_UART1 uart1
 #define PIN_UART1_TX    4
 #define PIN_UART1_RX    5
-#endif // USB_CDC_UART_BRIDGE
 
 #elif ( BOARD_TYPE == BOARD_ADAFRUIT_ITSY )
 
@@ -67,12 +67,10 @@
 #define PIN_LED_ERROR  -1
 #define PIN_LED_RX     -1
 
-#if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART_INTF_COUNT 1
+#define CDC_UART_INTF_COUNT 1
 #define PIN_UART0       uart0
 #define PIN_UART0_TX    0
 #define PIN_UART0_RX    1
-#endif // USB_CDC_UART_BRIDGE
 
 #elif ( BOARD_TYPE == BOARD_SPOKE_RP2040 )
 
@@ -88,12 +86,10 @@
 #define PIN_LED_ERROR  17
 #define PIN_LED_RX     18
 
-#if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART_INTF_COUNT 1
+#define CDC_UART_INTF_COUNT 1
 #define PIN_UART0       uart0
 #define PIN_UART0_TX    28
 #define PIN_UART0_RX    29
-#endif // USB_CDC_UART_BRIDGE
 
 
 #elif ( BOARD_TYPE == BOARD_WERKZEUG )
@@ -110,18 +106,16 @@
 #define PIN_LED_ERROR  21
 #define PIN_LED_RX     20
 
-#if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART_INTF_COUNT 1
+#define CDC_UART_INTF_COUNT 1
 #define PIN_UART0       uart0
 #define PIN_UART0_TX    28
 #define PIN_UART0_RX    29
-#endif // USB_CDC_UART_BRIDGE
 #elif ( BOARD_TYPE == BOARD_QMTECH_RP2040_DAUGHTERBOARD )
 
 // in rp2040 daughterboard UART pins are connected to FPGA pins
 // depending on the FPGA pin configuration there is a possibility
 // of damage so these pins are not going to be setup
-#define USB_CDC_UART_BRIDGE  0
+#define CDC_UART_INTF_COUNT 0
 
 #define PIN_TDI  16 
 #define PIN_TDO  17
@@ -155,15 +149,13 @@
 #define PIN_LED_ERROR  29
 #define PIN_LED_RX     29
 
-#if ( USB_CDC_UART_BRIDGE )
-#define PIN_UART_INTF_COUNT 2
+#define CDC_UART_INTF_COUNT 2
 #define PIN_UART0       uart0
 #define PIN_UART0_TX    12
 #define PIN_UART0_RX    13
 #define PIN_UART1       uart1
 #define PIN_UART1_TX    8
 #define PIN_UART1_RX    9
-#endif // USB_CDC_UART_BRIDGE
 
 
 #endif // BOARD_TYPE

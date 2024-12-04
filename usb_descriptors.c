@@ -27,7 +27,7 @@
 #include "tusb.h"
 #include "get_serial.h"
 
-#if ( USB_CDC_UART_BRIDGE )
+#if ( CDC_UART_INTF_COUNT > 0 )
 #define USB_BCD   0x0200
 #else
 #define USB_BCD   0x0110
@@ -69,11 +69,11 @@ uint8_t const * tud_descriptor_device_cb(void)
 enum
 {
   ITF_NUM_PROBE = 0,
-#if ( PIN_UART_INTF_COUNT > 0 )
+#if ( CDC_UART_INTF_COUNT > 0 )
   ITF_NUM_CDC_1 = 1,
   ITF_NUM_CDC_1_DATA,
 #endif
-#if (PIN_UART_INTF_COUNT > 1)
+#if (CDC_UART_INTF_COUNT > 1)
   ITF_NUM_CDC_2 = 3,
   ITF_NUM_CDC_2_DATA,
 #endif 
@@ -82,22 +82,18 @@ enum
 
 #define PROBE_OUT_EP_NUM 0x01
 #define PROBE_IN_EP_NUM  0x82
-#if ( PIN_UART_INTF_COUNT > 0 )
+#if ( CDC_UART_INTF_COUNT > 0 )
 #define CDC_NOTIF_EP1_NUM 0x83
 #define CDC_OUT_EP1_NUM   0x03
 #define CDC_IN_EP1_NUM    0x84
 #endif
-#if (PIN_UART_INTF_COUNT > 1)
+#if (CDC_UART_INTF_COUNT > 1)
 #define CDC_NOTIF_EP2_NUM 0x85
 #define CDC_OUT_EP2_NUM   0x05
 #define CDC_IN_EP2_NUM    0x86
 #endif 
 
-#if ( PIN_UART_INTF_COUNT > 0 )
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_VENDOR_DESC_LEN + (TUD_CDC_DESC_LEN * CFG_TUD_CDC))
-#else
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_VENDOR_DESC_LEN)
-#endif
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_VENDOR_DESC_LEN + (TUD_CDC_DESC_LEN * (CFG_TUD_CDC)))
 
 uint8_t const desc_configuration[CONFIG_TOTAL_LEN] =
 {
@@ -106,11 +102,11 @@ uint8_t const desc_configuration[CONFIG_TOTAL_LEN] =
 
   // Interface 2 : Interface number, string index, EP Out & IN address, EP size
   TUD_VENDOR_DESCRIPTOR(ITF_NUM_PROBE, 0, PROBE_OUT_EP_NUM, PROBE_IN_EP_NUM, 64),
-#if ( PIN_UART_INTF_COUNT > 0 )
+#if ( CDC_UART_INTF_COUNT > 0 )
   // Interface 3 : Interface number, string index, EP notification address and size, EP data address (out, in) and size.
   TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 4, CDC_NOTIF_EP1_NUM, 8, CDC_OUT_EP1_NUM, CDC_IN_EP1_NUM, 64),
 #endif
-#if ( PIN_UART_INTF_COUNT > 1 )
+#if ( CDC_UART_INTF_COUNT > 1 )
   TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_2, 5, CDC_NOTIF_EP2_NUM, 8, CDC_OUT_EP2_NUM, CDC_IN_EP2_NUM, 64),
 #endif
 };
@@ -135,10 +131,10 @@ char const *string_desc_arr[] =
     "Jean THOMAS",              // 1: Manufacturer
     "DirtyJTAG",                // 2: Product
     usb_serial,                 // 3: Serial, uses flash unique ID
-#if ( PIN_UART_INTF_COUNT > 0 )
+#if ( CDC_UART_INTF_COUNT > 0 )
     "DirtyJTAG CDC 0", // 4: CDC Interface 0
 #endif
-#if ( PIN_UART_INTF_COUNT > 1 )
+#if ( CDC_UART_INTF_COUNT > 1 )
     "DirtyJTAG CDC 1"  // 5: CDC Interface 1
 #endif
 };

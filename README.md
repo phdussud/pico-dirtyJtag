@@ -51,7 +51,7 @@ The following values control where the code expects to find functionality.  Of c
 #define PIN_LED_ERROR  25
 #define PIN_LED_RX     25
 
-#define PIN_UART_INTF_COUNT 2
+#define CDC_UART_INTF_COUNT 2
 #define PIN_UART0 uart0
 #define PIN_UART0_TX    12
 #define PIN_UART0_RX    13
@@ -60,14 +60,14 @@ The following values control where the code expects to find functionality.  Of c
 #define PIN_UART1_RX    5
 ```
 
-If the CDC to UART bridge is not required, or interfers in any way, it can be disabled by setting `USB_CDC_UART_BRIDGE` to 0
+If the CDC to UART bridge is not required, or interfers in any way, it can be disabled by setting `CDC_UART_INTF_COUNT` to 0
 
 ``` C
-#define USB_CDC_UART_BRIDGE  0
+#define CDC_UART_INTF_COUNT  0
 ```
-You can define 1 or 2 bridges by setting `PIN_UART_INTF_COUNT` appropriately
+You can define 1 or 2 bridges by setting `CDC_UART_INTF_COUNT` appropriately
 ``` C
-#define PIN_UART_INTF_COUNT 2
+#define CDC_UART_INTF_COUNT 2
 ```
 See the `dirtyJtagConfig.h` file for these and other configuration options.
 

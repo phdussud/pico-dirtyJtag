@@ -36,9 +36,7 @@
 #define TX_BUFFER_SIZE (4096) //needs to be a power of 2
 #define RX_BUFFER_SIZE (4096)
 
-
-
-#ifdef USB_CDC_UART_BRIDGE
+#if (CDC_UART_INTF_COUNT > 0)
 void cdc_uart_init( uart_inst_t *const uart, int uart_rx_pin, int uart_tx_pin );
 void cdc_uart_task(void);
 #endif
