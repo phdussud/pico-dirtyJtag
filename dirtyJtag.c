@@ -152,12 +152,13 @@ int main()
     tusb_init();
 
     led_init( LED_INVERTED, PIN_LED_TX, PIN_LED_RX, PIN_LED_ERROR );
-#if ( USB_CDC_UART_BRIDGE )
+#if ( PIN_UART_INTF_COUNT > 0 )
     cdc_uart_init( PIN_UART0, PIN_UART0_RX, PIN_UART0_TX );
-    #if (PIN_UART_INTF_COUNT == 2)
-        cdc_uart_init( PIN_UART1, PIN_UART1_RX, PIN_UART1_TX );
-    #endif
 #endif
+#if ( PIN_UART_INTF_COUNT > 1)
+    cdc_uart_init( PIN_UART1, PIN_UART1_RX, PIN_UART1_TX );
+#endif
+
 
 #ifdef MULTICORE
     multicore_launch_core1(core1_entry);
