@@ -39,7 +39,7 @@
 
 
 #ifdef USB_CDC_UART_BRIDGE
-void cdc_uart_init( uart_inst_t *const uart, int uart_rx_pin, int uart_tx_pin );
+void cdc_uart_init( int index, uart_inst_t *const uart, int uart_rx_pin, int uart_tx_pin );
 void cdc_uart_task(void);
 #endif
 

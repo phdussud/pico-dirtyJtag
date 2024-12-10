@@ -111,11 +111,11 @@ uint setup_usart_rx_dma(uart_inst_t *uart, volatile void *rx_address, irq_handle
 	return dma_chan;
 }
 
-void cdc_uart_init( uart_inst_t *const uart_, int uart_rx_pin, int uart_tx_pin )  {
+void cdc_uart_init( int index, uart_inst_t *const uart_, int uart_rx_pin, int uart_tx_pin )  {
 	uint uart_index;
 	uart_index = uart_get_index(uart_);
     struct uart_device *uart;
-	uart = &uart_devices[uart_index];
+	uart = &uart_devices[index];
 
 	gpio_set_function(uart_tx_pin, GPIO_FUNC_UART);
 	gpio_set_function(uart_rx_pin, GPIO_FUNC_UART);
@@ -175,7 +175,7 @@ void cdc_uart_task(void)
 	for (size_t i = 0; i < PIN_UART_INTF_COUNT; i++)
 	{
 		uart = &uart_devices[i];
-		if (tud_cdc_n_connected(uart->index))
+		if (tud_cdc_n_connected(i))
 		{
 			uart->is_connected = 1;
 			int written = 0;
@@ -190,13 +190,13 @@ void cdc_uart_task(void)
 			{
 				led_tx( 1 );
 				uart->n_checks = 0;
-				uint32_t capacity = tud_cdc_n_write_available(uart->index);
+				uint32_t capacity = tud_cdc_n_write_available(i);
 				uint32_t size_out = MIN(space, capacity);
 				if (capacity >= FULL_SWO_PACKET)
 				{
-					uint32_t written = tud_cdc_n_write(uart->index, uart->rx_read_address, size_out);
+					uint32_t written = tud_cdc_n_write(i, uart->rx_read_address, size_out);
 					if (space < FULL_SWO_PACKET)
-						tud_cdc_n_write_flush(uart->index);
+						tud_cdc_n_write_flush(i);
 					tud_task();
 					uart->rx_read_address += written;
 					if (uart->rx_read_address >= &uart->rx_buf[RX_BUFFER_SIZE])
@@ -204,13 +204,13 @@ void cdc_uart_task(void)
 				}
 				led_tx( 0 );
 			}
-			uint ra = tud_cdc_n_available(uart->index);
+			uint ra = tud_cdc_n_available(i);
 			size_t watermark = MIN(ra, &uart->tx_buf[TX_BUFFER_SIZE] - uart->tx_write_address);
 			if (watermark > 0)
 			{
 				led_rx( 1 );
 				size_t tx_len;
-				tx_len = tud_cdc_n_read(uart->index, (void*)uart->tx_write_address, watermark);
+				tx_len = tud_cdc_n_read(i, (void*)uart->tx_write_address, watermark);
 				//be careful about modifying tx_write_address as it is used in the IRQ handler
 				volatile uint8_t *l_tx_write_address = uart->tx_write_address + tx_len;
 				if (l_tx_write_address >= &uart->tx_buf[TX_BUFFER_SIZE])
@@ -230,7 +230,7 @@ void cdc_uart_task(void)
 		}
 		else if (uart->is_connected)
 		{
-			tud_cdc_n_write_clear(uart->index);
+			tud_cdc_n_write_clear(i);
 			uart->is_connected = 0;
 		}
 	}
@@ -243,7 +243,7 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
 	for (size_t i = 0; i < PIN_UART_INTF_COUNT; i++)
 	{
 		uart = &uart_devices[i];
-		if (uart->index == itf)
+		if (i == itf)
 		{
 			uart_deinit(uart->inst);
 			tud_cdc_n_write_clear(itf);
