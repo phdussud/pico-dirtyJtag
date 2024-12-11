@@ -123,7 +123,6 @@ void cdc_uart_init( int index, uart_inst_t *const uart_, int uart_rx_pin, int ua
 	gpio_set_pulls(uart_rx_pin, 1, 0);
 
 	uart->inst = uart_;
-	uart->index = uart_index;
 	uart_init(uart->inst, USBUSART_BAUDRATE);
 	uart_set_hw_flow(uart->inst, false, false);
 	uart_set_format(uart->inst, 8, 1, UART_PARITY_NONE);
