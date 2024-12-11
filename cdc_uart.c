@@ -31,7 +31,6 @@
 static uint8_t tx_bufs[2][TX_BUFFER_SIZE] __attribute__((aligned(TX_BUFFER_SIZE)));
 static struct uart_device
 {
-	uint index;
 	uart_inst_t *inst;
 	uint8_t *tx_buf;
 	volatile uint8_t rx_buf[RX_BUFFER_SIZE];
