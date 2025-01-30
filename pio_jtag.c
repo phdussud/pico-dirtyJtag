@@ -8,6 +8,8 @@ void jtag_task();//to process USB OUT packets while waiting for DMA to finish
 
 #define DMA
 
+static bool last_tdo = false;
+
 #if 0
 static bool pins_source = false; //false: PIO, true: GPIO
 
@@ -130,6 +132,7 @@ void __time_critical_func(pio_jtag_write_blocking)(const pio_jtag_inst_t *jtag, 
             }
         }
     }
+    last_tdo = !!(x & 1);
 }
 
 void __time_critical_func(pio_jtag_write_read_blocking)(const pio_jtag_inst_t *jtag, const uint8_t *bsrc, uint8_t *bdst,
@@ -178,8 +181,9 @@ void __time_critical_func(pio_jtag_write_read_blocking)(const pio_jtag_inst_t *j
             }
         }
     }
-    //fix the last byte
-    if (last_shift) 
+    last_tdo = !!(*rx_last_byte_p & 1);
+    // fix the last byte
+    if (last_shift)
     {
         *rx_last_byte_p = *rx_last_byte_p << last_shift;
     }
@@ -232,12 +236,8 @@ uint8_t __time_critical_func(pio_jtag_write_tms_blocking)(const pio_jtag_inst_t 
             }
         }
     }
-    //fix the last byte
-    if (last_shift)
-    {
-        x = x << last_shift;
-    }
-    return x;
+    last_tdo = !!(x & 1);
+    return last_tdo ? 0xFF : 0x00;
 }
 
 static void init_pins(uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)
@@ -323,7 +323,7 @@ void jtag_set_clk(const pio_jtag_inst_t *jtag, bool value)
 
 bool jtag_get_tdo(const pio_jtag_inst_t *jtag)
 {
-    return !! toggle_bits_in_buffer[0];
+    return last_tdo;
 }
 
 
