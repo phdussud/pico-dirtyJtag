@@ -16,8 +16,9 @@
     pull                        ; get length-1 and disregard previous OSR state 
     out x, 32       side 0      ; this moves the first 32 bits into X
 loop:
-    out pins, 1     side 0      ; Stall here on empty (sideset proceeds even if instruction stalls, so we stall with SCK low
-    in pins, 1      side 1 [1] 
+    out pins, 1     side 0      ; Stall here on empty (sideset proceeds even if instruction stalls, so we stall with TCK low
+    nop             side 1      ; raise TCK
+    in pins, 1      side 1      ; sample TDO
     jmp x-- loop    side 0
     push            side 0      ; Force the last ISR bits to be pushed to the tx fifo
 % c-sdk {
