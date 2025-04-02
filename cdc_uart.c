@@ -28,11 +28,11 @@
 #include "led.h"
 #include "tusb.h"
 #include "cdc_uart.h"
-static uint8_t tx_bufs[2][TX_BUFFER_SIZE] __attribute__((aligned(TX_BUFFER_SIZE)));
+
 static struct uart_device
 {
 	uart_inst_t *inst;
-	uint8_t *tx_buf;
+	volatile uint8_t tx_buf[TX_BUFFER_SIZE];
 	volatile uint8_t rx_buf[RX_BUFFER_SIZE];
 	uint rx_dma_channel;
 	uint tx_dma_channel;
@@ -43,6 +43,8 @@ static struct uart_device
 } uart_devices[2];
 
 static void dma_handler();
+
+static void set_tx_dma(volatile uint8_t *l_tx_write_address, struct uart_device *uart);
 
 static uint n_bits(uint n)
 {
@@ -56,7 +58,7 @@ static uint n_bits(uint n)
 	return i+1;
 }
 
-uint setup_usart_tx_dma(uart_inst_t *uart, void *tx_address, uint buffer_size)
+uint setup_usart_tx_dma(uart_inst_t *uart, volatile uint8_t *tx_address, uint buffer_size)
 {
 	uint dma_chan = dma_claim_unused_channel(true);
 	// Tell the DMA to raise IRQ line 1 when the channel finishes a block
@@ -69,7 +71,6 @@ uint setup_usart_tx_dma(uart_inst_t *uart, void *tx_address, uint buffer_size)
 	channel_config_set_read_increment(&c, true);
 	channel_config_set_write_increment(&c, false);
 	channel_config_set_dreq(&c, uart_get_dreq(uart, true));
-	channel_config_set_ring(&c, false, n_bits(buffer_size - 1));
 	dma_channel_configure(
 		dma_chan,
 		&c,
@@ -126,16 +127,30 @@ void cdc_uart_init( int index, uart_inst_t *const uart_, int uart_rx_pin, int ua
 	uart_set_hw_flow(uart->inst, false, false);
 	uart_set_format(uart->inst, 8, 1, UART_PARITY_NONE);
 	uart_set_fifo_enabled(uart->inst, true);
-	uart->tx_buf = tx_bufs[uart_index];
-	uart->tx_dma_channel = setup_usart_tx_dma(uart->inst, uart->tx_buf, TX_BUFFER_SIZE);
+	uart->tx_dma_channel = setup_usart_tx_dma(uart->inst, &uart->tx_buf[0], TX_BUFFER_SIZE);
 	uart->rx_dma_channel = setup_usart_rx_dma(uart->inst, &uart->rx_buf[0], dma_handler, RX_BUFFER_SIZE);
-	uart->tx_write_address = uart->tx_buf;
+	uart->tx_write_address = &uart->tx_buf[0];
 	uart->rx_read_address = (uint8_t *)&uart->rx_buf[0];
 	uart->n_checks = 0; 
 }
 
-// shared between rx_dma_channel and tx_dma_channel
+void set_tx_dma(volatile uint8_t *l_tx_write_address, struct uart_device *uart)
+{
+	uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
+	if (ra >= (&uart->tx_buf[0] + TX_BUFFER_SIZE))
+	{
+		assert(ra == (&uart->tx_buf[0] + TX_BUFFER_SIZE));
+		dma_channel_set_read_addr(uart->tx_dma_channel, &uart->tx_buf[0], false);
+		ra = (uint8_t*)&uart->tx_buf[0];
+	}
+	if (ra != l_tx_write_address)
+	{
+		size_t length = (l_tx_write_address >= ra) ? (l_tx_write_address - ra) : (TX_BUFFER_SIZE - (ra - &uart->tx_buf[0]));
+		dma_channel_set_trans_count(uart->tx_dma_channel, length, true);
+	}
+}
 
+// shared between rx_dma_channel and tx_dma_channel
 static void dma_handler()
 {
 	volatile uint32_t ints = dma_hw->ints1;
@@ -151,17 +166,16 @@ static void dma_handler()
 		}
 		if (dma_channel_get_irq1_status(uart->tx_dma_channel))
 		{
-			uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
 			// cdc_uart_task can modify uart->tx_write_address. cache it locally
 			volatile uint8_t *l_tx_write_address = uart->tx_write_address;
-			size_t space = (l_tx_write_address >= ra) ? (l_tx_write_address - ra) : (l_tx_write_address + TX_BUFFER_SIZE - ra);
-			if (space > 0)
-				dma_channel_set_trans_count(uart->tx_dma_channel, space, true);
-		}
+            set_tx_dma(l_tx_write_address, uart);
+        }
 	}
 	
 	dma_hw->ints1 = ints;
 }
+
+
 
 bool cdc_stopped = false;
 void cdc_uart_task(void)
@@ -183,18 +197,18 @@ void cdc_uart_task(void)
 			{
 				wa = &uart->rx_buf[0];
 			}
-			uint32_t space = (wa >= uart->rx_read_address) ? (wa - uart->rx_read_address) : (wa + RX_BUFFER_SIZE - uart->rx_read_address);
+			uint32_t rx_used_space = (wa >= uart->rx_read_address) ? (wa - uart->rx_read_address) : (wa + RX_BUFFER_SIZE - uart->rx_read_address);
 			uart->n_checks++;
-			if ((space >= FULL_SWO_PACKET) || ((space != 0) && (uart->n_checks > 4)))
+			if ((rx_used_space >= FULL_SWO_PACKET) || ((rx_used_space != 0) && (uart->n_checks > 4)))
 			{
 				led_tx( 1 );
 				uart->n_checks = 0;
 				uint32_t capacity = tud_cdc_n_write_available(i);
-				uint32_t size_out = MIN(space, capacity);
+				uint32_t size_out = MIN(rx_used_space, capacity);
 				if (capacity >= FULL_SWO_PACKET)
 				{
 					uint32_t written = tud_cdc_n_write(i, uart->rx_read_address, size_out);
-					if (space < FULL_SWO_PACKET)
+					if (rx_used_space < FULL_SWO_PACKET)
 						tud_cdc_n_write_flush(i);
 					tud_task();
 					uart->rx_read_address += written;
@@ -203,8 +217,10 @@ void cdc_uart_task(void)
 				}
 				led_tx( 0 );
 			}
-			uint ra = tud_cdc_n_available(i);
-			size_t watermark = MIN(ra, &uart->tx_buf[TX_BUFFER_SIZE] - uart->tx_write_address);
+			uint usb_available = tud_cdc_n_available(i);
+			uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
+			uint32_t tx_free_space = (uart->tx_write_address >= ra) ? (&uart->tx_buf[TX_BUFFER_SIZE] - uart->tx_write_address) : (ra - uart->tx_write_address);
+			size_t watermark = MIN(usb_available, tx_free_space);
 			if (watermark > 0)
 			{
 				led_rx( 1 );
@@ -219,10 +235,7 @@ void cdc_uart_task(void)
 				// restart dma if not active
 				if (!dma_channel_is_busy(uart->tx_dma_channel))
 				{
-					uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
-					size_t space = (uart->tx_write_address >= ra) ? (uart->tx_write_address - ra) : (uart->tx_write_address + TX_BUFFER_SIZE - ra);
-					if (space > 0)
-						dma_channel_set_trans_count(uart->tx_dma_channel, space, true);
+					set_tx_dma(l_tx_write_address, uart);
 				}
 				led_rx( 0 );
 			}
