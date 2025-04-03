@@ -1,5 +1,6 @@
 ;JTAG implementation
 
+.pio_version 0 // only requires PIO version 0
 .program djtag_tdo
 .side_set 1 opt
 
@@ -29,6 +30,7 @@ static inline void pio_jtag_init(PIO pio, uint sm,
     pio_sm_config c = djtag_tdo_program_get_default_config(prog_offs);
     sm_config_set_out_pins(&c, pin_tdi, 1);
     sm_config_set_in_pins(&c, pin_tdo);
+    sm_config_set_in_pin_count(&c, 1);
     sm_config_set_sideset_pins(&c, pin_tck);
     //(shift to left, auto push/pull, threshold=nbits)
     sm_config_set_out_shift(&c, false, true, 8);
@@ -41,7 +43,6 @@ static inline void pio_jtag_init(PIO pio, uint sm,
     pio_gpio_init(pio, pin_tdi);
     //pio_gpio_init(pio, pin_tdo);
     pio_gpio_init(pio, pin_tck);
-
 
     // jtag is synchronous, so bypass input synchroniser to reduce input delay.
     hw_set_bits(&pio->input_sync_bypass, 1u << pin_tdo);

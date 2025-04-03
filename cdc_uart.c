@@ -201,7 +201,7 @@ void cdc_uart_task(void)
 			uart->n_checks++;
 			if ((rx_used_space >= FULL_SWO_PACKET) || ((rx_used_space != 0) && (uart->n_checks > 4)))
 			{
-				led_tx( 1 );
+				led_tx(1);
 				uart->n_checks = 0;
 				uint32_t capacity = tud_cdc_n_write_available(i);
 				uint32_t size_out = MIN(rx_used_space, capacity);
@@ -215,7 +215,7 @@ void cdc_uart_task(void)
 					if (uart->rx_read_address >= &uart->rx_buf[RX_BUFFER_SIZE])
 						uart->rx_read_address -= RX_BUFFER_SIZE;
 				}
-				led_tx( 0 );
+				led_tx(0);
 			}
 			uint usb_available = tud_cdc_n_available(i);
 			uint8_t *ra = (uint8_t *)(dma_channel_hw_addr(uart->tx_dma_channel)->read_addr);
@@ -223,7 +223,7 @@ void cdc_uart_task(void)
 			size_t watermark = MIN(usb_available, tx_free_space);
 			if (watermark > 0)
 			{
-				led_rx( 1 );
+				led_rx(1);
 				size_t tx_len;
 				tx_len = tud_cdc_n_read(i, (void*)uart->tx_write_address, watermark);
 				//be careful about modifying tx_write_address as it is used in the IRQ handler
@@ -237,7 +237,7 @@ void cdc_uart_task(void)
 				{
 					set_tx_dma(l_tx_write_address, uart);
 				}
-				led_rx( 0 );
+				led_rx(0);
 			}
 		}
 		else if (uart->is_connected)

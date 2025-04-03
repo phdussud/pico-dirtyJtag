@@ -254,6 +254,8 @@ static void init_pins(uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, ui
     gpio_init_mask((1u << pin_tms));
     gpio_set_dir_masked( (1u << pin_tms), 0xffffffffu);
     #endif
+    gpio_init(pin_tdo);
+    gpio_set_dir(pin_tdo, false);
 }
 
 void init_jtag(pio_jtag_inst_t* jtag, uint freq, uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)
