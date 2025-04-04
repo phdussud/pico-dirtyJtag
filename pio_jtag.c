@@ -307,7 +307,8 @@ void init_jtag(pio_jtag_inst_t* jtag, uint freq, uint pin_tck, uint pin_tdi, uin
 
 void jtag_set_clk_freq(const pio_jtag_inst_t *jtag, uint freq_khz) {
     uint clk_sys_freq_khz = clock_get_hz(clk_sys) / 1000;
-    uint32_t divider = (clk_sys_freq_khz / freq_khz) / 4;
+    float divf = (float)clk_sys_freq_khz / (freq_khz * 4);
+    uint16_t divider = (divf > (int)divf) ? (int)divf + 1 : (int)divf;
     divider = (divider < 2) ? 2 : divider; //max reliable freq 
     pio_sm_set_clkdiv_int_frac(pio0, jtag->sm, divider, 0);
 }
