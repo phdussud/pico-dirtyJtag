@@ -27,12 +27,6 @@
 #include "tusb.h"
 #include "get_serial.h"
 
-#if ( CDC_UART_INTF_COUNT > 0 )
-#define USB_BCD   0x0200
-#else
-#define USB_BCD   0x0110
-#endif
-
 //--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
@@ -40,7 +34,7 @@ tusb_desc_device_t const desc_device =
 {
     .bLength            = sizeof(tusb_desc_device_t),
     .bDescriptorType    = TUSB_DESC_DEVICE,
-    .bcdUSB             = USB_BCD,
+    .bcdUSB             = 0x0200,
     .bDeviceClass       = 0x00, // Each interface specifies its own
     .bDeviceSubClass    = 0x00, // Each interface specifies its own
     .bDeviceProtocol    = 0x00,
