@@ -151,6 +151,10 @@ int main()
     usb_serial_init();
     tusb_init();
 
+#if ( PDJ_DEBUG_LEVEL > 0 )
+    stdio_init_all();
+#endif
+
     led_init( LED_INVERTED, PIN_LED_TX, PIN_LED_RX, PIN_LED_ERROR );
 #if ( CDC_UART_INTF_COUNT > 0 )
     cdc_uart_init( 0, PIN_UART0, PIN_UART0_RX, PIN_UART0_TX );

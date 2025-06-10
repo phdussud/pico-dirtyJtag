@@ -23,6 +23,18 @@ set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_BUILD_TYPE "Release")
 #set(TINYUSB_DEBUG_LEVEL 0)
 
+# DEBUG enables stdio output to the first CDC UART interface.
+# (You can send text / data with printf() (or alike) to a terminal emulator
+# that is running on the computer that the dJ is connected to.)
+# To use it, in dirtyJTAGConfig.h, CDC_UART_INTF_COUNT should be > 0.
+# Open up a terminal emulator to see the output.
+# 0 - no debug
+# 1 - debug
+# Other levels are reserved for future use.
+set(PDJ_DEBUG_LEVEL 0)
+# Pass this to project files as well.
+add_compile_definitions(PDJ_DEBUG_LEVEL=${PDJ_DEBUG_LEVEL})
+
 # initalize pico_sdk from installed location
 # (note this can come from environment, CMake cache etc)
 #set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
@@ -71,6 +83,11 @@ target_link_libraries(dirtyJtag PRIVATE
 	tinyusb_board
 	pico_multicore
 )
+
+# Allow debug messages to go through USB CDC UART interface.
+if (${PDJ_DEBUG_LEVEL})
+    pico_enable_stdio_usb(dirtyJtag 1)
+endif()
 
 pico_add_extra_outputs(dirtyJtag)
 
