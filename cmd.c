@@ -221,29 +221,55 @@ static void cmd_freq(pio_jtag_inst_t* jtag, const uint8_t *commands) {
 //static uint8_t output_buffer[64];
 
 static uint32_t cmd_xfer(pio_jtag_inst_t* jtag, const uint8_t *commands, bool extend_length, bool no_read, uint8_t* tx_buf) {
-  uint16_t transferred_bits;
+  uint16_t transferred_bits = 0;
   uint8_t* output_buffer = 0;
   transferred_bits = commands[1];
+  uint16_t transferred_bytes = 0;
+
+  // For version 3, two bytes hold the number of bits.
+  // The offset is 3.
+  // Earlier versions use only one byte,
+  // so the offset is 2.
+  uint8_t commands_offset = 2;
+
   if (extend_length)
   {
     transferred_bits += 256;
   }
+
   // Ensure we don't do over-read
   if (transferred_bits > 62 * 8)
   {
     transferred_bits = 62 * 8;
   }
 
+  // Calculate the number of bytes big enough to hold all the bits.
+  transferred_bytes = (transferred_bits + 7) >> 3;
+
   /* Fill the output buffer with zeroes */
   if (!no_read)
   {
     output_buffer = tx_buf;
-    memset(output_buffer, 0, (transferred_bits + 7) / 8);
+    memset(output_buffer, 0, transferred_bytes);
   }
 
-  jtag_transfer(jtag, transferred_bits, commands+2, output_buffer);
+#if ( PDJ_DEBUG_LEVEL > 0 )
+  printf("cmd_xfer: transferred_bits: %d\n", (int) transferred_bits);
+  printf("cmd_xfer: transferred_bytes: %d\n", (int) transferred_bytes);
 
-  return (transferred_bits + 7) / 8;
+  printf("cmd_xfer: Printing command buffer:\n");
+  printf("First commands are CMD_XFER and bit length.\n");
+  print_buffer(commands, transferred_bytes + commands_offset);
+#endif
+
+  jtag_transfer(jtag, transferred_bits, commands + commands_offset, output_buffer);
+
+#if ( PDJ_DEBUG_LEVEL > 0 )
+  printf("cmd_xfer: Printing output buffer:\n");
+  print_buffer(output_buffer, transferred_bytes);
+#endif
+
+  return transferred_bytes;
 }
 
 static void cmd_setsig(pio_jtag_inst_t* jtag, const uint8_t *commands) {

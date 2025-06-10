@@ -72,13 +72,24 @@ void jtag_main_task()
         //after there is data available, there is a risk that data from 2 BULK OUT transaction will be (partially) combined into one
         //The DJTAG protocol does not tolerate this. 
         tud_task();// tinyusb device task
-        if (tud_vendor_available())
+        
+        // Get the number of available bytes and only transfer that many,
+        // instead of setting an arbitrary value.
+        uint32_t bytes_available = 0;
+        if (bytes_available = tud_vendor_available())
         {
             led_rx( 1 );
             uint bnum = wr_buffer_number;
             uint count = tud_vendor_read(buffer_infos[wr_buffer_number].buffer, 64);
             if (count != 0)
             {
+/*
+#if ( PDJ_DEBUG_LEVEL > 0 )
+                printf("jtag_main_task: bytes_available: %d\n", bytes_available);
+                printf("jtag_main_task: Printing bytes read:\n");
+                print_buffer(buffer_infos[wr_buffer_number].buffer, bytes_available);
+#endif
+*/
                 buffer_infos[bnum].count = count;
                 buffer_infos[bnum].busy = true;
                 wr_buffer_number = wr_buffer_number + 1; //switch buffer
@@ -110,12 +121,29 @@ void jtag_task()
 void core1_entry() {
 
     djtag_init();
+
+/*
+#if ( PDJ_DEBUG_LEVEL > 0 )
+    char pf_a[15] = "core1 rx_buf ";
+    char pf_b[15] = "core1 tx_buf ";
+#endif
+*/
+
     while (1)
     {
         uint rx_num = multicore_fifo_pop_blocking();
         buffer_info* bi = &buffer_infos[rx_num];
         assert (bi->busy);
         cmd_handle(&jtag, bi->buffer, bi->count, tx_buf);
+/*
+#if ( PDJ_DEBUG_LEVEL > 0 )
+        printf("core1_entry: count: %d\n", bi->count);
+        printf("core1_entry: Printing rx_buf:\n");
+        print_buffer_pf(bi->buffer, bi->count, pf_a);
+        printf("core1_entry: Printing tx_buf:\n");
+        print_buffer_pf(tx_buf, bi->count, pf_b);
+#endif
+*/
         multicore_fifo_push_blocking(rx_num);
     }
  
