@@ -10,6 +10,7 @@
 #include "tusb.h"
 #include "cmd.h"
 #include "get_serial.h"
+#include "util.h"
 
 #include "dirtyJtagConfig.h"
 
