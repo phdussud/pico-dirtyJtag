@@ -2,6 +2,8 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
+ * Copyright (c) 2020-2025 Patrick Dussud
+ * Copyright (c) 2023 David Williams (davidthings)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

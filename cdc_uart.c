@@ -3,7 +3,11 @@
  *
  * Based on work that is Copyright (C) 2017 Black Sphere Technologies Ltd.
  * Copyright (C) 2017 Dave Marples <dave@marples.net>
- * Copyright (C) 2023 Patrick H Dussud
+ * Copyright (c) 2020-2025 Patrick Dussud
+ * Copyright (c) 2023 David Williams (davidthings)
+ * Copyright (c) 2023 luyi1888
+ * Copyright (c) 2024 DangerousPrototypes
+ * Copyright (c) 2024 DESKTOP-M9CCUTI\ian
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +22,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.	 If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "dirtyJtagConfig.h"
 
 #if ( CDC_UART_INTF_COUNT > 0 )
