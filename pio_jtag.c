@@ -347,7 +347,6 @@ void jtag_set_clk(const pio_jtag_inst_t *jtag, bool value)
 {
     if (value)
     {
-        toggle_bits_in_buffer[0] = 0; 
         pio_jtag_write_read_blocking(jtag, toggle_bits_out_buffer, toggle_bits_in_buffer, 1);
     }
 }
