@@ -45,6 +45,7 @@ static struct uart_device
 	uint8_t *rx_read_address;
 	uint n_checks;
 	uint is_connected;
+	bool cdc_stopped;
 } uart_devices[2];
 
 static void dma_handler();
@@ -136,7 +137,8 @@ void cdc_uart_init( int index, uart_inst_t *const uart_, int uart_rx_pin, int ua
 	uart->rx_dma_channel = setup_usart_rx_dma(uart->inst, &uart->rx_buf[0], dma_handler, RX_BUFFER_SIZE);
 	uart->tx_write_address = &uart->tx_buf[0];
 	uart->rx_read_address = (uint8_t *)&uart->rx_buf[0];
-	uart->n_checks = 0; 
+	uart->n_checks = 0;
+	uart->cdc_stopped = false;
 }
 
 void set_tx_dma(volatile uint8_t *l_tx_write_address, struct uart_device *uart)
@@ -182,17 +184,16 @@ static void dma_handler()
 
 
 
-bool cdc_stopped = false;
 void cdc_uart_task(void)
 {
-	if (cdc_stopped)
-	  	return;
 
 	struct uart_device *uart;
 
 	for (size_t i = 0; i < CDC_UART_INTF_COUNT; i++)
 	{
 		uart = &uart_devices[i];
+		if (uart->cdc_stopped)
+			return;
 		if (tud_cdc_n_connected(i))
 		{
 			uart->is_connected = 1;
@@ -262,26 +263,79 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
 		uart = &uart_devices[i];
 		if (i == itf)
 		{
+			uart->cdc_stopped = true;
+			uart_parity_t parity;
+			uint data_bits, stop_bits;
 			uart_deinit(uart->inst);
 			tud_cdc_n_write_clear(itf);
 			tud_cdc_n_read_flush(itf);
 			uart_init(uart->inst, line_coding->bit_rate);
+			switch (line_coding->parity)
+			{
+			case CDC_LINE_CODING_PARITY_ODD:
+				parity = UART_PARITY_ODD;
+				break;
+			case CDC_LINE_CODING_PARITY_EVEN:
+				parity = UART_PARITY_EVEN;
+				break;
+			case CDC_LINE_CODING_PARITY_NONE:
+				parity = UART_PARITY_NONE;
+				break;
+			default:
+				parity = UART_PARITY_NONE;
+				break;
+			}
+
+			switch (line_coding->data_bits)
+			{
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+				data_bits = line_coding->data_bits;
+				break;
+			default:
+				data_bits = 8;
+				break;
+			}
+
+			/* The PL011 only supports 1 or 2 stop bits. 1.5 stop bits is translated to 2,
+			 * which is safer than the alternative. */
+			switch (line_coding->stop_bits)
+			{
+			case CDC_LINE_CONDING_STOP_BITS_1_5:
+			case CDC_LINE_CONDING_STOP_BITS_2:
+				stop_bits = 2;
+				break;
+			case CDC_LINE_CONDING_STOP_BITS_1:
+				stop_bits = 1;
+				break;
+			default:
+				stop_bits = 1;
+				break;
+			}
+
+			uart_set_format(uart->inst, data_bits, stop_bits, parity);
+			uart->cdc_stopped = false;
 		}
-		
-	}
+		}
 }
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 {
-	//if (itf != UART_PORT_ITF)
-		return;
-	/* CDC drivers use linestate as a bodge to activate/deactivate the interface.
-	* Resume our UART polling on activate, stop on deactivate */
-    // DTR RTS not so
-	// if (!dtr && !rts)
-	// 	cdc_stopped = true;
-	// else
-	// 	cdc_stopped = false;
+	for (size_t i = 0; i < CDC_UART_INTF_COUNT; i++)
+	{
+		struct uart_device *uart = &uart_devices[i];
+		if (i == itf)
+		{
+			/* CDC drivers use linestate as a bodge to activate/deactivate the interface.
+			* Resume our UART polling on activate, stop on deactivate */
+			if (!dtr)
+				uart->cdc_stopped = true;
+			else
+				uart->cdc_stopped = false;
+		}
+	}
 }
 
 #endif // CDC_UART_INTF_COUNT
