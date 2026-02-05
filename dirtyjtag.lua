@@ -85,7 +85,7 @@ end
 local function tobin(n, len)
     local s = ""
     for i = len - 1 , 0, -1 do
-        s = s .. (((n >> i) & 1) == 1 and "1" or "0")
+        s = s .. (bit.band(bit.rshift(n, i), 1) == 1 and "1" or "0")
     end
     return s
 end
