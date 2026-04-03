@@ -43,12 +43,16 @@
 #define BOARD_RP2040_ZERO    5
 
 // Select the board type from the above
-#define BOARD_TYPE BOARD_PICO
+//#define BOARD_TYPE BOARD_PICO
 //#define BOARD_TYPE BOARD_ADAFRUIT_ITSY
 //#define BOARD_TYPE BOARD_SPOKE_RP2040
 //#define BOARD_TYPE BOARD_WERKZEUG
 //#define BOARD_TYPE BOARD_QMTECH_RP2040_DAUGHTERBOARD
 //#define BOARD_TYPE BOARD_RP2040_ZERO
+
+#ifndef BOARD_TYPE
+#define BOARD_TYPE BOARD_PICO
+#endif
 
 // General mapping
 // TDI  SPIO RX
@@ -84,12 +88,21 @@
 
 #elif ( BOARD_TYPE == BOARD_ADAFRUIT_ITSY )
 
-#define PIN_TDI 28 
-#define PIN_TDO 27
-#define PIN_TCK 26
-#define PIN_TMS 29
-#define PIN_RST 24
-#define PIN_TRST 25
+#if defined(BOARD_ADAFRUIT_ITSY_KB2040)
+#define PIN_TDI 4 // D4
+#define PIN_TDO 3 // D3
+#define PIN_TCK 2 // D2
+#define PIN_TMS 5 // D5
+#define PIN_RST 6 // D6
+#define PIN_TRST 7 // D7
+#else
+#define PIN_TDI 28 // A2
+#define PIN_TDO 27 // A1
+#define PIN_TCK 26 // A0
+#define PIN_TMS 29 // A3
+#define PIN_RST 24 // D24
+#define PIN_TRST 25 // D25
+#endif
 
 // no regular LEDs on the Itsy - it's a neopixel
 #define LED_INVERTED   0
@@ -98,9 +111,16 @@
 #define PIN_LED_RX     -1
 
 #define CDC_UART_INTF_COUNT 1
+
+#if defined(BOARD_ADAFRUIT_ITSY_KB2040)
+#define PIN_UART0       uart1
+#define PIN_UART0_TX    8
+#define PIN_UART0_RX    9
+#else
 #define PIN_UART0       uart0
 #define PIN_UART0_TX    0
 #define PIN_UART0_RX    1
+#endif
 
 #elif ( BOARD_TYPE == BOARD_SPOKE_RP2040 )
 
