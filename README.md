@@ -73,6 +73,25 @@ See the `dirtyJtagConfig.h` file for these and other configuration options.
 
 ## Building pico-dirtyJtag
 
+### Nix
+
+Run `nix build .#<target>` or `nix build .#<target>.flash`, where target is one of:
+
+- default
+- rpi-pico
+- adafruit-itsy
+- adafruit-kb2040
+- spoke-rp2040
+- machdyne-werkzeug
+- qmtech-rp2040-daughterboard
+- waveshare-rp2040-zero
+
+The `flash` output will produce a flash script that runs `picotool`.
+
+Note that `nix develop` will drop you into a devshell.
+
+### The old fashioned way
+
 Follow [the instructions](https://github.com/raspberrypi/pico-sdk) for installing the official Raspberry Pi Pico SDK, then clone this repository and use the following commands:
 
 ```
