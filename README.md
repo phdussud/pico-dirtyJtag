@@ -73,6 +73,19 @@ See the `dirtyJtagConfig.h` file for these and other configuration options.
 
 ## Building pico-dirtyJtag
 
+### The official way
+
+Follow [the instructions](https://github.com/raspberrypi/pico-sdk) for installing the official Raspberry Pi Pico SDK, then clone this repository and use the following commands:
+
+```
+mkdir -p build
+cd build
+cmake ..
+make
+```
+
+If everything succeeds you should have a `dirtyJtag.uf2` file that you can directly upload to the Pi Pico.
+
 ### Nix
 
 Run `nix build .#<target>` or `nix build .#<target>.flash`, where target is one of:
@@ -89,19 +102,6 @@ Run `nix build .#<target>` or `nix build .#<target>.flash`, where target is one 
 The `flash` output will produce a flash script that runs `picotool`.
 
 Note that `nix develop` will drop you into a devshell.
-
-### The old fashioned way
-
-Follow [the instructions](https://github.com/raspberrypi/pico-sdk) for installing the official Raspberry Pi Pico SDK, then clone this repository and use the following commands:
-
-```
-mkdir -p build
-cd build
-cmake ..
-make
-```
-
-If everything succeeds you should have a `dirtyJtag.uf2` file that you can directly upload to the Pi Pico.
 
 ## JTAG Usage
 
