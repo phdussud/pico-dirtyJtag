@@ -1,4 +1,6 @@
 {
+  lib,
+  stdenv,
   mkShell,
   autoreconfHook,
   fetchpatch,
@@ -26,7 +28,6 @@ mkShell {
   nativeBuildInputs = [
     picotool
     picocom
-    usbutils
     openocd'
-  ];
+  ] ++ lib.optional (!stdenv.isDarwin) usbutils;
 }
